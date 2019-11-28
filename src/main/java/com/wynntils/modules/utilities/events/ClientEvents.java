@@ -110,6 +110,7 @@ public class ClientEvents implements Listener {
             scheduledGuiScreen = null;
             return;
         }
+
         firstNullOccurred = scheduledGuiScreen != null && e.getGui() == null && !firstNullOccurred;
     }
 
@@ -131,7 +132,6 @@ public class ClientEvents implements Listener {
             DailyReminderManager.openedDaily();
         }
     }
-
 
     private static int lastHorseId = -1;
     @SuppressWarnings("unchecked")

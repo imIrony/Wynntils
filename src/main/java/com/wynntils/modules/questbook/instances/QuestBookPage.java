@@ -81,7 +81,7 @@ public class QuestBookPage extends GuiScreen {
         searchUpdate("");
         time = Minecraft.getSystemTime();
         text_flicker = Minecraft.getSystemTime();
-        lastTick = Minecraft.getMinecraft().world.getWorldTime();
+        lastTick = Minecraft.getSystemTime();
 
         Keyboard.enableRepeatEvents(true);
     }
@@ -190,13 +190,13 @@ public class QuestBookPage extends GuiScreen {
     public void handleMouseInput() throws IOException {
         int mDwehll = Mouse.getEventDWheel() * CoreDBConfig.INSTANCE.scrollDirection.getScrollDirection();
 
-        if (mDwehll <= -1 && (Minecraft.getSystemTime() - delay >= 100)) {
+        if (mDwehll <= -1 && (Minecraft.getSystemTime() - delay >= 15)) {
             if (acceptNext) {
                 delay = Minecraft.getSystemTime();
                 Minecraft.getMinecraft().getSoundHandler().playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1f));
                 currentPage++;
             }
-        } else if(mDwehll >= 1 && (Minecraft.getSystemTime() - delay >= 100)) {
+        } else if(mDwehll >= 1 && (Minecraft.getSystemTime() - delay >= 15)) {
             if (acceptBack) {
                 delay = Minecraft.getSystemTime();
                 Minecraft.getMinecraft().getSoundHandler().playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1f));

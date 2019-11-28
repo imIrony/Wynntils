@@ -19,6 +19,7 @@ import com.wynntils.modules.core.overlays.inventories.ChestReplacer;
 import com.wynntils.modules.core.overlays.inventories.HorseReplacer;
 import com.wynntils.modules.core.overlays.inventories.IngameMenuReplacer;
 import com.wynntils.modules.core.overlays.inventories.InventoryReplacer;
+import net.minecraft.block.BlockBarrier;
 import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
@@ -26,8 +27,9 @@ import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.gui.inventory.GuiScreenHorseInventory;
 import net.minecraft.entity.passive.AbstractHorse;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.potion.Potion;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
@@ -118,7 +120,7 @@ public class ClientEvents implements Listener {
                         case "Ninja":
                             selectedClass = ClassType.ASSASSIN;
                             break;
-                        case "Shaman":
+                        case "Skyseer":
                             selectedClass = ClassType.SHAMAN;
                             break;
                     }
@@ -134,34 +136,47 @@ public class ClientEvents implements Listener {
      */
     @SubscribeEvent
     public void removeInvisiblePlayers(RenderPlayerEvent.Pre e) {
-        if (Reference.onWorld && e.getEntityPlayer() != null && (e.getEntityPlayer().isInvisible() || e.getEntityPlayer().isSpectator() || e.getEntityPlayer().isPotionActive(Potion.getPotionById(14)))) {
-            e.setCanceled(true);
-        }
+        if(!Reference.onWorld || e.getEntityPlayer() == null) return;
+
+        //HeyZeer0: this verifies based if there's a barrier block below the player, it will also helps
+        //if the player is inside a dungeon | Main Use = cutscene
+        EntityPlayer player = e.getEntityPlayer();
+        if(!(player.world.getBlockState(new BlockPos(player.posX, player.posY-1, player.posZ)).getBlock() instanceof BlockBarrier)) return;
+
+        e.setCanceled(true);
     }
 
+    /**
+     * Process the packet queue if the queue is not empty
+     */
     @SubscribeEvent
     public void proccessPacketQueue(TickEvent.ClientTickEvent e) {
-        if (e.phase != TickEvent.Phase.END) return;
+        if (e.phase != TickEvent.Phase.END || !PacketQueue.hasQueuedPacket()) return;
 
-        if (PacketQueue.hasQueuedPacket()) {
-            PingManager.calculatePing();
-            PacketQueue.proccessQueue();
-        }
+        PingManager.calculatePing();
+        PacketQueue.proccessQueue();
     }
 
+    /**
+     *  Register the new Main Menu buttons
+     */
     @SubscribeEvent
     public void addMainMenuButtons(GuiScreenEvent.InitGuiEvent.Post e) {
         GuiScreen gui = e.getGui();
-        if (gui == gui.mc.currentScreen && gui instanceof GuiMainMenu) {
-            MainMenuButtons.addButtons((GuiMainMenu) gui, e.getButtonList());
-        }
+        if(gui != gui.mc.currentScreen || !(gui instanceof GuiMainMenu)) return;
+
+        MainMenuButtons.addButtons((GuiMainMenu) gui, e.getButtonList());
     }
 
+    /**
+     *  Handles the main menu new buttons actions
+     */
     @SubscribeEvent
     public void mainMenuActionPerformed(GuiScreenEvent.ActionPerformedEvent.Post e) {
         GuiScreen gui = e.getGui();
-        if (gui == gui.mc.currentScreen && gui instanceof GuiMainMenu) {
-            MainMenuButtons.actionPerformed((GuiMainMenu) gui, e.getButton(), e.getButtonList());
-        }
+        if(gui != gui.mc.currentScreen || !(gui instanceof GuiMainMenu)) return;
+
+        MainMenuButtons.actionPerformed((GuiMainMenu) gui, e.getButton(), e.getButtonList());
     }
+
 }
