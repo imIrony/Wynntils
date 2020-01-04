@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.utilities.configs;
@@ -8,6 +8,10 @@ import com.wynntils.core.framework.rendering.colors.CustomColor;
 import com.wynntils.core.framework.settings.annotations.Setting;
 import com.wynntils.core.framework.settings.annotations.SettingsInfo;
 import com.wynntils.core.framework.settings.instances.SettingsClass;
+import com.wynntils.modules.utilities.events.ServerEvents;
+import com.wynntils.modules.utilities.managers.WindowIconManager;
+import com.wynntils.webapi.WebManager;
+import com.wynntils.webapi.profiles.item.ItemProfile;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +32,9 @@ public class UtilitiesConfig extends SettingsClass {
 
     @Setting(displayName = "Add Class & Server Button to Menu", description = "Should a class and server button be displayed on the in-game menu?")
     public boolean addClassServer = true;
+
+    @Setting(displayName = "Add Change Hub Button to Menu", description = "Should a button to change between the US and EU hubs be displayed on the in-game menu when in the hub?")
+    public boolean addChangeHub = true;
 
     @Setting(displayName = "Hide Nametags Through Walls", description = "Should nametags be hidden when behind opaque blocks?")
     public boolean hideNametags = true;
@@ -56,6 +63,9 @@ public class UtilitiesConfig extends SettingsClass {
     @Setting(displayName = "Apply Wynncraft Resource Pack", description = "Should the Wynncraft server resource pack be applied when joining the server instead of when picking your class?")
     public boolean autoResource = true;
 
+    @Setting(displayName = "Apply Wynncraft Resource Pack During Minecraft Load", description = "Should the Wynncraft server resource pack be applied when starting Minecraft?")
+    public boolean autoResourceOnLoad = false;
+
     @Setting(displayName = "Display GUI Confirmation for Purchasing Bank Pages", description = "Should Wynntils display a GUI confirmation when buying bank pages?")
     public boolean addBankConfirmation = true;
 
@@ -65,8 +75,23 @@ public class UtilitiesConfig extends SettingsClass {
     @Setting(displayName = "Categorize Item Identifications", description = "Should the identifications in an item's tooltip be categorized?")
     public boolean addItemIdentificationSpacing = true;
 
+    @Setting(displayName = "Categorize Set bonus Identifications", description = "Should the set bonus in an item's tooltip be categorized?")
+    public boolean addSetBonusSpacing = true;
+
     @Setting(displayName = "Indicate Newly Added Items to the Game", description = "Should the mod append a \"NEW\" tag to the name of items that have recently been added to the game?")
     public boolean showNewItems = false;
+
+    @Setting(displayName = "Change Window Title When on Wynncraft", description = "Should the mod change the window title to \"Wynncraft\" while on the server?")
+    public boolean changeWindowTitle = true;
+
+    @Setting(displayName = "Change Window Icon When on Wynncraft", description = "Should the mod change the window icon to the Wynncraft logo while on the server?\n\nThis does not work on macOS systems")
+    public boolean changeWindowIcon = true;
+
+    @Setting(displayName = "Show Tooltips From Top", description = "Should tooltips be rendered from the top by default?")
+    public boolean renderTooltipsFromTop = true;
+
+    @Setting(displayName = "Scale Tooltips", description = "Should tooltips be scaled down so that they fit on your screen?")
+    public boolean renderTooltipsScaled = false;
 
     @Setting(upload = false)
     public String lastServerResourcePack = "";
@@ -74,8 +99,7 @@ public class UtilitiesConfig extends SettingsClass {
     @Setting(upload = false)
     public String lastServerResourcePackHash = "";
 
-    //HeyZeer0: Do not add @Setting here, or it will be displayed on the configuration
-    @Setting(upload = true)
+    @Setting
     public HashMap<Integer, HashSet<Integer>> locked_slots = new HashMap<>();
 
     @SettingsInfo(name = "wars", displayPath = "Wars")
@@ -97,7 +121,7 @@ public class UtilitiesConfig extends SettingsClass {
     public static class Data extends SettingsClass {
         public static Data INSTANCE;
 
-
+        @Setting
         public long dailyReminder = 0L;
 
         @Override
@@ -191,7 +215,7 @@ public class UtilitiesConfig extends SettingsClass {
         public CustomColor mythicHighlightColor = new CustomColor(0.3f, 0, 0.3f);
 
         @Setting(displayName = "Fabled Item Highlight Colour", description = "What colour should the highlight for fabled items be?\n\n§aClick the coloured box to open the colour wheel.", order = 52)
-        public CustomColor fabledHighlightColor = new CustomColor(1, .58f, .49f);
+        public CustomColor fabledHighlightColor = new CustomColor(1, 1/3f, 1/3f);
 
         @Setting(displayName = "Rare Item Highlight Colour", description = "What colour should the highlight for rare items be?\n\n§aClick the coloured box to open the colour wheel.", order = 53)
         public CustomColor rareHighlightColor = new CustomColor(1, 0, 1);
@@ -249,7 +273,13 @@ public class UtilitiesConfig extends SettingsClass {
 
     @Override
     public void onSettingChanged(String name) {
-
+        if (name.equalsIgnoreCase("addItemIdentificationSpacing"))
+            WebManager.getDirectItems().forEach(ItemProfile::clearGuideStack);
+        else if (name.equalsIgnoreCase("changeWindowTitle"))
+            ServerEvents.onWindowTitleSettingChanged();
+        else if (name.equalsIgnoreCase("changeWindowIcon")) {
+            WindowIconManager.update();
+        }
     }
 
 }

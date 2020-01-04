@@ -1,11 +1,11 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.map.instances;
 
 import com.wynntils.Reference;
-import com.wynntils.core.utils.MD5Verification;
+import com.wynntils.core.utils.helpers.MD5Verification;
 import com.wynntils.webapi.WebManager;
 import com.wynntils.webapi.WebReader;
 import com.wynntils.webapi.WebRequestHandler;
@@ -36,7 +36,7 @@ public class MapProfile {
     public MapProfile(String url, String name) {
         this.url = url; this.mapFile = new File(mapLocation, name + ".png");
 
-        if(!mapFile.exists()) downloadDirect = true;
+        if (!mapFile.exists()) downloadDirect = true;
     }
 
     public void updateMap() {
@@ -75,8 +75,8 @@ public class MapProfile {
     }
 
     public void bindTexture() throws Exception {
-        if(!readyToUse) return;
-        if(textureId == -20) setTexture();
+        if (!readyToUse) return;
+        if (textureId == -20) setTexture();
 
         GlStateManager.bindTexture(textureId);
     }

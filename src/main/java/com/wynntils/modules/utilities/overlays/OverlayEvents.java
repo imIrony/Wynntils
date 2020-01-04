@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.utilities.overlays;
@@ -51,7 +51,7 @@ public class OverlayEvents implements Listener {
 
     @SubscribeEvent
     public void onPlayerInfoRender(GuiOverlapEvent.PlayerInfoOverlap.RenderList e) {
-        if(!Reference.onWorld || !OverlayConfig.PlayerInfo.INSTANCE.replaceVanilla) return;
+        if (!Reference.onWorld || !OverlayConfig.PlayerInfo.INSTANCE.replaceVanilla) return;
 
         e.setCanceled(true);
     }
@@ -145,25 +145,26 @@ public class OverlayEvents implements Listener {
             }
         }
         if (OverlayConfig.GameUpdate.RedirectSystemMessages.INSTANCE.redirectHorse) {
-            if (messageText.equals("There is no room for a horse.")) {
-                GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "There is no room for a horse.");
-                e.setCanceled(true);
-                return;
-            } else if (messageText.equals("Since you interacted with your inventory, your horse has despawned.")) {
-                GameUpdateOverlay.queueMessage(TextFormatting.LIGHT_PURPLE + "Horse despawned.");
-                e.setCanceled(true);
-                return;
-            } else if (messageText.equals("Your horse is scared to come out right now, too many mobs are nearby.")) {
-                GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "Too many mobs nearby to spawn your horse");
-                e.setCanceled(true);
-                return;
+            switch (messageText) {
+                case "There is no room for a horse.":
+                    GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "There is no room for a horse.");
+                    e.setCanceled(true);
+                    return;
+                case "Since you interacted with your inventory, your horse has despawned.":
+                    GameUpdateOverlay.queueMessage(TextFormatting.LIGHT_PURPLE + "Horse despawned.");
+                    e.setCanceled(true);
+                    return;
+                case "Your horse is scared to come out right now, too many mobs are nearby.":
+                    GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "Too many mobs nearby to spawn your horse");
+                    e.setCanceled(true);
+                    return;
             }
         }
 
         if (OverlayConfig.ToastsSettings.INSTANCE.enableToast) {
             if (OverlayConfig.ToastsSettings.INSTANCE.enableQuestCompleted && formattedText.matches("^(" + TextFormatting.GREEN + "|" + TextFormatting.YELLOW + ") {5,}" + TextFormatting.RESET + "(" + TextFormatting.GREEN + "|" + TextFormatting.YELLOW + ")" + TextFormatting.BOLD + "\\w.*" + TextFormatting.RESET + "$") && !messageText.contains("Powder Manual")) {
                 ToastOverlay.addToast(new Toast(Toast.ToastType.QUEST_COMPLETED, "Quest Completed!", messageText.trim().replace("Mini-Quest - ", "")));
-            } else if (OverlayConfig.ToastsSettings.INSTANCE.enableAreaDiscovered && formattedText.matches("^(" + TextFormatting.YELLOW + ")? {5,}(" + TextFormatting.RESET + TextFormatting.YELLOW + ")?(?!§)((?![0-9]).)*" + TextFormatting.RESET + "$") && !messageText.contains("Battle Summary") && !messageText.contains("Powder Manual")) {
+            } else if (OverlayConfig.ToastsSettings.INSTANCE.enableAreaDiscovered && formattedText.matches("^(" + TextFormatting.YELLOW + ")? {5,}(" + TextFormatting.RESET + TextFormatting.YELLOW + ")?(?!§)((?![0-9]).)*" + TextFormatting.RESET + "$") && !messageText.contains("Battle Summary") && !messageText.contains("Powder Manual") && !messageText.contains("hunted mode")) {
                 ToastOverlay.addToast(new Toast(Toast.ToastType.AREA_DISCOVERED, "Area Discovered!", messageText.trim()));
             } else if (OverlayConfig.ToastsSettings.INSTANCE.enableDiscovery && formattedText.matches("^ {5,}" + TextFormatting.RESET + TextFormatting.AQUA + "\\w.*" + TextFormatting.RESET + "$")) {
                 ToastOverlay.addToast(new Toast(Toast.ToastType.DISCOVERY, "Discovery Found!", messageText.trim()));
@@ -176,7 +177,7 @@ public class OverlayEvents implements Listener {
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "Not enough mana.");
                 e.setCanceled(true);
                 return;
-            } else if (messageText.contains("You have not unlocked this spell!")) {
+            } else if (messageText.equals("You have not unlocked this spell!")) {
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "Spell not unlocked.");
                 e.setCanceled(true);
                 return;
@@ -218,7 +219,7 @@ public class OverlayEvents implements Listener {
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "Can't teleport - move away from blocks.");
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches(".+ gave you \\[\\+\\d+ ❤\\]")) {
+            } else if (messageText.matches("[a-zA-Z0-9_]{1,16} gave you \\[\\+\\d+ ❤\\]")) {
                 String[] res = formattedText.split(" ");
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + res[3].substring(2) + " ❤] " + TextFormatting.GRAY + "(" + TextFormatting.AQUA + res[0].replace(TextFormatting.RESET.toString(), "") + TextFormatting.GRAY + ")");
                 e.setCanceled(true);
@@ -228,7 +229,7 @@ public class OverlayEvents implements Listener {
                 GameUpdateOverlay.queueMessage(TextFormatting.AQUA + "Cleared " + TextFormatting.GRAY + "all potion effects");
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches(".+ gave you \\[\\+\\d+ ❤\\] Cleared all potion effects\\.")) {
+            } else if (messageText.matches("[a-zA-Z0-9_]{1,16} gave you \\[\\+\\d+ ❤\\] Cleared all potion effects\\.")) {
                 String[] res = formattedText.split(" ");
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + res[3].substring(2) + " ❤] " + TextFormatting.GRAY + "(" + TextFormatting.AQUA + res[0].replace(TextFormatting.RESET.toString(), "") + TextFormatting.GRAY + ")");
                 GameUpdateOverlay.queueMessage(TextFormatting.AQUA + "Cleared " + TextFormatting.GRAY + "all potion effects (" + TextFormatting.AQUA + res[0].replace(TextFormatting.RESET.toString(), "") + TextFormatting.GRAY + ")");
@@ -240,7 +241,7 @@ public class OverlayEvents implements Listener {
                 GameUpdateOverlay.queueMessage(TextFormatting.AQUA + "Removed " + TextFormatting.GRAY + "all fire");
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches(".+ gave you \\[\\+\\d+ ❤\\] Cleared all potion effects Removed all fire\\.")) {
+            } else if (messageText.matches("[a-zA-Z0-9_]{1,16} gave you \\[\\+\\d+ ❤\\] Cleared all potion effects Removed all fire\\.")) {
                 String[] res = formattedText.split(" ");
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + res[3].substring(2) + " ❤] " + TextFormatting.GRAY + "(" + TextFormatting.AQUA + res[0].replace(TextFormatting.RESET.toString(), "") + TextFormatting.GRAY + ")");
                 GameUpdateOverlay.queueMessage(TextFormatting.AQUA + "Cleared " + TextFormatting.GRAY + "all potion effects (" + TextFormatting.AQUA + res[0].replace(TextFormatting.RESET.toString(), "") + TextFormatting.GRAY + ")");
@@ -256,23 +257,23 @@ public class OverlayEvents implements Listener {
                 GameUpdateOverlay.queueMessage(TextFormatting.AQUA + "+3 minutes " + TextFormatting.GRAY + "speed boost");
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches(".+ gave you \\+3 minutes speed boost\\.")) {
+            } else if (messageText.matches("[a-zA-Z0-9_]{1,16} gave you \\+3 minutes speed boost\\.")) {
                 GameUpdateOverlay.queueMessage(TextFormatting.AQUA + "+3 minutes " + TextFormatting.GRAY + "speed boost (" + formattedText.split(" ")[0].replace(TextFormatting.RESET.toString(), "") + TextFormatting.GRAY + ")");
                 e.setCanceled(true);
                 return;
             }
             // WARRIOR
-            else if (messageText.matches(".+ has given you 10% resistance\\.")) {
+            else if (messageText.matches("[a-zA-Z0-9_]{1,16} has given you 10% resistance\\.")) {
                 GameUpdateOverlay.queueMessage(TextFormatting.AQUA + "+10% resistance " + TextFormatting.GRAY + "(" + formattedText.split(" ")[0].replace(TextFormatting.RESET.toString(), "") + TextFormatting.GRAY + ")");
                 e.setCanceled(true);
                 return;
             }
-            else if (messageText.matches(".+ has given you 15% resistance\\.")) {
+            else if (messageText.matches("[a-zA-Z0-9_]{1,16} has given you 15% resistance\\.")) {
                 GameUpdateOverlay.queueMessage(TextFormatting.AQUA + "+15% resistance " + TextFormatting.GRAY + "(" + formattedText.split(" ")[0].replace(TextFormatting.RESET.toString(), "") + TextFormatting.GRAY + ")");
                 e.setCanceled(true);
                 return;
             }
-            else if (messageText.matches(".+ has given you 20% resistance and 10% strength\\.")) {
+            else if (messageText.matches("[a-zA-Z0-9_]{1,16} has given you 20% resistance and 10% strength\\.")) {
                 GameUpdateOverlay.queueMessage(TextFormatting.AQUA + "+20% resistance " + TextFormatting.GRAY + "& " + TextFormatting.AQUA + "+10% strength " + TextFormatting.GRAY + "(" + formattedText.split(" ")[0].replace(TextFormatting.RESET.toString(), "") + TextFormatting.GRAY + ")");
                 e.setCanceled(true);
                 return;
@@ -284,12 +285,12 @@ public class OverlayEvents implements Listener {
                 GameUpdateOverlay.queueMessage(TextFormatting.YELLOW + res[3] + TextFormatting.GOLD + " skill points available.");
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches(".+ is now level \\d+")) {
+            } else if (messageText.matches("[a-zA-Z0-9_]{1,16} is now level \\d+")) {
                 String[] res = messageText.split(" ");
                 GameUpdateOverlay.queueMessage(TextFormatting.YELLOW + res[0] + TextFormatting.GOLD + " is now level " + TextFormatting.YELLOW + res[4]);
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches(".+ is now level \\d+ in [" + PROF_COOKING + "-" + PROF_ALCHEMISM + "] (Fishing|Woodcutting|Mining|Farming|Scribing|Jeweling|Alchemism|Cooking|Weaponsmithing|Tailoring|Woodworking|Armouring)")) {
+            } else if (messageText.matches("[a-zA-Z0-9_]{1,16} is now level \\d+ in [" + PROF_COOKING + "-" + PROF_ALCHEMISM + "] (Fishing|Woodcutting|Mining|Farming|Scribing|Jeweling|Alchemism|Cooking|Weaponsmithing|Tailoring|Woodworking|Armouring)")) {
                 String[] res = messageText.split(" ");
                 GameUpdateOverlay.queueMessage(TextFormatting.YELLOW + res[0] + TextFormatting.GOLD + " is now " + TextFormatting.YELLOW + res[6] + " " + res[7] + TextFormatting.GOLD + " level " + TextFormatting.YELLOW + res[4]);
                 e.setCanceled(true);
@@ -298,15 +299,15 @@ public class OverlayEvents implements Listener {
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "Item not identified.");
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches(".+ is not a .+ weapon\\. You must use a .+\\.")) {
+            } else if (messageText.matches("^(?!.*\\].*).+ is not a .+ weapon\\. You must use a .+\\.")) {
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "This weapon is not from your class.");
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches(".+ is for combat level \\d+\\+ only\\.")) {
+            } else if (messageText.matches("^(?!.*\\].*).+ is for combat level \\d+\\+ only\\.")) {
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "You are not a high enough level to use this item.");
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches(".+ requires your .+ skill to be at least \\d+\\.")) {
+            } else if (messageText.matches("^(?!.*\\].*).+ requires your .+ skill to be at least \\d+\\.")) {
                 String[] res = messageText.split(" ");
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "You don't have enough " + res[res.length - 7] + " to use this item.");
                 e.setCanceled(true);
@@ -418,29 +419,28 @@ public class OverlayEvents implements Listener {
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "You can only scrap weapons, accessories, potions, armour, and crafted items here.");
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches("^.+ Merchant: Thank you for your business. Come again!")) {
+            } else if (messageText.matches("^(?!.*\\].*).+ Merchant: Thank you for your business. Come again!")) {
                 GameUpdateOverlay.queueMessage(TextFormatting.LIGHT_PURPLE + "Purchase complete.");
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches("^.+ Merchant: I'm afraid you cannot afford that item.")) {
+            } else if (messageText.matches("^(?!.*\\].*).+ Merchant: I'm afraid you cannot afford that item.")) {
                 GameUpdateOverlay.queueMessage(TextFormatting.LIGHT_PURPLE + "You cannot afford that item.");
                 e.setCanceled(true);
                 return;
             }
         }
         if (OverlayConfig.GameUpdate.RedirectSystemMessages.INSTANCE.redirectLoginLocal) {
-            String message = messageText;
-            if (message.matches("^\\[.+\\] .+ has just logged in!")) {
-                if (message.startsWith("[HERO]")) {
-                    GameUpdateOverlay.queueMessage(TextFormatting.GREEN + "→ " + TextFormatting.DARK_PURPLE + "[" + TextFormatting.LIGHT_PURPLE + "HERO" + TextFormatting.DARK_PURPLE + "] " + TextFormatting.LIGHT_PURPLE + message.split(" ")[1]);
+            if (messageText.matches("^\\[.+\\] .+ has just logged in!")) {
+                if (messageText.startsWith("[HERO]")) {
+                    GameUpdateOverlay.queueMessage(TextFormatting.GREEN + "→ " + TextFormatting.DARK_PURPLE + "[" + TextFormatting.LIGHT_PURPLE + "HERO" + TextFormatting.DARK_PURPLE + "] " + TextFormatting.LIGHT_PURPLE + messageText.split(" ")[1]);
                     e.setCanceled(true);
                     return;
-                } else if (message.startsWith("[VIP+]")) {
-                    GameUpdateOverlay.queueMessage(TextFormatting.GREEN + "→ " + TextFormatting.DARK_AQUA + "[" + TextFormatting.AQUA + "VIP+" + TextFormatting.DARK_AQUA + "] " + TextFormatting.AQUA + message.split(" ")[1]);
+                } else if (messageText.startsWith("[VIP+]")) {
+                    GameUpdateOverlay.queueMessage(TextFormatting.GREEN + "→ " + TextFormatting.DARK_AQUA + "[" + TextFormatting.AQUA + "VIP+" + TextFormatting.DARK_AQUA + "] " + TextFormatting.AQUA + messageText.split(" ")[1]);
                     e.setCanceled(true);
                     return;
-                } else if (message.startsWith("[VIP]")) {
-                    GameUpdateOverlay.queueMessage(TextFormatting.GREEN + "→ " + TextFormatting.DARK_GREEN + "[" + TextFormatting.GREEN + "VIP" + TextFormatting.DARK_GREEN + "] " + TextFormatting.GREEN + message.split(" ")[1]);
+                } else if (messageText.startsWith("[VIP]")) {
+                    GameUpdateOverlay.queueMessage(TextFormatting.GREEN + "→ " + TextFormatting.DARK_GREEN + "[" + TextFormatting.GREEN + "VIP" + TextFormatting.DARK_GREEN + "] " + TextFormatting.GREEN + messageText.split(" ")[1]);
                     e.setCanceled(true);
                     return;
                 }
@@ -448,7 +448,7 @@ public class OverlayEvents implements Listener {
         }
         if (OverlayConfig.GameUpdate.RedirectSystemMessages.INSTANCE.redirectLoginFriend) {
             // Not sure on the nether server format -Bedo
-            if (messageText.matches(".+ has logged into server (WC|HB|WAR|N)\\d+ as an? (Warrior|Knight|Mage|Dark Wizard|Assassin|Ninja|Archer|Hunter|Shaman)À?") && formattedText.startsWith(TextFormatting.GREEN.toString())) {
+            if (messageText.matches("[a-zA-Z0-9_]{1,16} has logged into server (WC|HB|WAR|EU|N)\\d+ as an? (Warrior|Knight|Mage|Dark Wizard|Assassin|Ninja|Archer|Hunter|Shaman|Skyseer)À?") && formattedText.startsWith(TextFormatting.GREEN.toString())) {
                 String[] res = messageText.split(" ");
                 if (res.length == 9) {
                     if (res[8].equals("ArcherÀ")) res[8] = "Shaman";
@@ -458,17 +458,17 @@ public class OverlayEvents implements Listener {
                 }
                 e.setCanceled(true);
                 return;
-            } else if (messageText.matches(".+ left the game\\.")) {
+            } else if (messageText.matches("[a-zA-Z0-9_]{1,16} left the game\\.")) {
                 GameUpdateOverlay.queueMessage(TextFormatting.DARK_RED + "← " + TextFormatting.DARK_GREEN + messageText.split(" ")[0]);
                 e.setCanceled(true);
                 return;
             }
         }
         if (OverlayConfig.GameUpdate.RedirectSystemMessages.INSTANCE.redirectLoginGuild) {
-            if (messageText.matches(".+ has logged into server (WC|HB|WAR)\\d+ as an? (Warrior|Knight|Mage|Dark Wizard|Assassin|Ninja|Archer|Hunter|Shaman)À?") && formattedText.startsWith(TextFormatting.AQUA.toString())) { // À temp for Shaman
+            if (messageText.matches("[a-zA-Z0-9_]{1,16} has logged into server (WC|HB|EU|WAR)\\d+ as an? (Warrior|Knight|Mage|Dark Wizard|Assassin|Ninja|Archer|Hunter|Shaman|Skyseer)À?") && formattedText.startsWith(TextFormatting.AQUA.toString())) {  // À temp for Shaman
                 String[] res = messageText.split(" ");
                 if (res.length == 9) {
-                    if (res[8].equals("ArcherÀ")) res[8] = "Shaman"; // Temp replace for Shaman (Same changes as above)
+                    if (res[8].equals("ArcherÀ")) res[8] = "Shaman";  // Temp replace for Shaman (Same changes as above)
                     GameUpdateOverlay.queueMessage(TextFormatting.GREEN + "→ " + TextFormatting.DARK_AQUA + res[0] + " [" + TextFormatting.AQUA + res[5] + TextFormatting.DARK_AQUA + "/" + TextFormatting.AQUA + res[8] + TextFormatting.DARK_AQUA + "]");
                 } else if (res.length == 10) {
                     GameUpdateOverlay.queueMessage(TextFormatting.GREEN + "→ " + TextFormatting.DARK_AQUA + res[0] + " [" + TextFormatting.AQUA + res[5] + TextFormatting.DARK_AQUA + "/" + TextFormatting.AQUA + res[8] + " " + res[9] + TextFormatting.DARK_AQUA + "]");
@@ -550,7 +550,7 @@ public class OverlayEvents implements Listener {
 
             String newTerritoryArea = e.getNewTerritory().replaceAll(filterList, "").replaceAll(" {2,}", " ").trim();
             String oldTerritoryArea = e.getOldTerritory().replaceAll(filterList, "").replaceAll(" {2,}", " ").trim();
-            if(newTerritoryArea.equalsIgnoreCase(oldTerritoryArea)) return;
+            if (newTerritoryArea.equalsIgnoreCase(oldTerritoryArea)) return;
 
             ToastOverlay.addToast(new Toast(Toast.ToastType.TERRITORY, "Now entering", newTerritoryArea));
         }

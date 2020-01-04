@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.core.instances;
@@ -55,16 +55,16 @@ public class PacketResponse {
         return lastSent == -1 || System.currentTimeMillis() - lastSent > PingManager.getLastPing() + 150;
     }
 
-    //TODO make this verification faster cuz at the current state it's slowing the packet a lot
+    // TODO make this verification faster cuz at the current state it's slowing the packet a lot
     public boolean isResponseValid(Packet packetType) {
         if (skipping) {
             return true;
         }
-        if(responseType == null || tries >= maxTries) {
+        if (responseType == null || tries >= maxTries) {
             if (this.onDrop != null) this.onDrop.run();
-            return true; //this avoids packet spamming
+            return true;  // this avoids packet spamming
         }
-        if(!packetType.getClass().isAssignableFrom(responseType)) return false;
+        if (!packetType.getClass().isAssignableFrom(responseType)) return false;
 
         return verification == null || verification.apply(packetType);
     }

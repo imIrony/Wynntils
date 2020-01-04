@@ -1,13 +1,16 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.questbook.instances;
 
+import com.wynntils.core.framework.instances.PlayerInfo;
+import com.wynntils.modules.questbook.enums.QuestLevelType;
 import com.wynntils.modules.questbook.enums.QuestSize;
 import com.wynntils.modules.questbook.enums.QuestStatus;
 import com.wynntils.webapi.WebManager;
 import com.wynntils.webapi.profiles.TerritoryProfile;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.text.TextFormatting;
 
 import java.util.ArrayList;
@@ -21,6 +24,8 @@ public class QuestInfo {
     private String questbookFriendlyName;
     private final QuestStatus status;
     private final int minLevel;
+    private final QuestLevelType levelType;
+    private final boolean hasLevel;
     private final QuestSize size;
     private final List<String> lore;
     private final ArrayList<String> splittedDescription;
@@ -30,14 +35,16 @@ public class QuestInfo {
 
     private static final Pattern coordinatePattern = Pattern.compile("\\[(-?\\d+), ?(-?\\d+), ?(-?\\d+)\\]");
 
-    public QuestInfo(String name, QuestStatus status, int minLevel, QuestSize size, String currentDescription, List<String> lore) {
-        this.name = name; this.status = status; this.minLevel = minLevel; this.size = size; this.currentDescription = currentDescription; this.lore = lore;
+    public QuestInfo(String name, QuestStatus status, int minLevel, QuestLevelType levelType, boolean hasLevel, QuestSize size, String currentDescription, List<String> lore) {
+        this.name = name; this.status = status;
+        this.minLevel = minLevel; this.levelType = levelType; this.hasLevel = hasLevel;
+        this.size = size; this.currentDescription = currentDescription; this.lore = lore;
 
         ArrayList<String> splittedDescription = new ArrayList<>();
         StringBuilder currentMessage = new StringBuilder();
         int chars = 0;
-        for(String x : currentDescription.split(" ")) {
-            if(chars + x.length() > 37) {
+        for (String x : currentDescription.split(" ")) {
+            if (chars + x.length() > 37) {
                 splittedDescription.add(currentMessage.toString());
                 currentMessage = new StringBuilder(x);
                 currentMessage.append(' ');
@@ -49,15 +56,16 @@ public class QuestInfo {
         }
         splittedDescription.add(currentMessage.toString());
 
-        String questbookFriendlyName = this.name;
-        if (questbookFriendlyName.length() > 22) {
-            questbookFriendlyName = questbookFriendlyName.substring(0, 19);
-            questbookFriendlyName += "...";
+        String questbookFriendlyName = this.name.replace("Mini-Quest - ", "");
+        if (Minecraft.getMinecraft().fontRenderer.getStringWidth(questbookFriendlyName) > 120) questbookFriendlyName += "...";
+        while (Minecraft.getMinecraft().fontRenderer.getStringWidth(questbookFriendlyName) > 120) {
+            questbookFriendlyName = questbookFriendlyName.substring(0, questbookFriendlyName.length() - 4).trim() + "...";
         }
+
         lore.add(0, TextFormatting.BOLD + this.name);
 
         Matcher m = coordinatePattern.matcher(currentDescription);
-        if(m.find()) {
+        if (m.find()) {
             x = Integer.parseInt(m.group(1));
             z = Integer.parseInt(m.group(3));
         } else {
@@ -98,8 +106,17 @@ public class QuestInfo {
         return lore;
     }
 
+    public QuestLevelType getLevelType() {
+        return levelType;
+    }
+
     public int getMinLevel() {
         return minLevel;
+    }
+
+    public boolean hasLevel() {
+        if (status != QuestStatus.CANNOT_START) return true;
+        return levelType == QuestLevelType.COMBAT ? PlayerInfo.getPlayerInfo().getLevel() >= minLevel : hasLevel;
     }
 
     public QuestSize getSize() {
@@ -135,11 +152,11 @@ public class QuestInfo {
     }
 
     public boolean isMiniQuest() {
-        return name.startsWith("Mini-Quest");
+        return false;
     }
 
     public String toString() {
-        return name + ":" + minLevel + ":" + size.toString() + ":" + status.toString() + ":" + currentDescription;
+        return name + ":" + minLevel + ":" + levelType + ":" + size.toString() + ":" + status.toString() + ":" + currentDescription;
     }
 
 }

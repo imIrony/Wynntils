@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.richpresence.profiles;
@@ -13,7 +13,7 @@ public class DataProfile {
     String location = "Waiting";
     boolean unknownLocation = false;
 
-    public DataProfile(){
+    public DataProfile() {
     }
 
     public String getLocation() {

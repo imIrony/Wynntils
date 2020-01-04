@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.utilities.configs;
@@ -77,7 +77,7 @@ public class OverlayConfig extends SettingsClass {
             b,
             c,
             d
-            //following the format, to add more textures, register them here with a name and create a special case in the render method
+            // following the format, to add more textures, register them here with a name and create a special case in the render method
         }
 
     }
@@ -115,7 +115,7 @@ public class OverlayConfig extends SettingsClass {
             b,
             c,
             d
-            //following the format, to add more textures, register them here with a name and create a special case in the render method
+            // following the format, to add more textures, register them here with a name and create a special case in the render method
         }
 
     }
@@ -178,7 +178,7 @@ public class OverlayConfig extends SettingsClass {
             a,
             b,
             c
-            //following the format, to add more textures, register them here with a name and create a special case in the render method
+            // following the format, to add more textures, register them here with a name and create a special case in the render method
         }
 
     }
@@ -203,7 +203,7 @@ public class OverlayConfig extends SettingsClass {
         public enum BubbleTexture {
             Wynn,
             Liquid,
-            Saphire,
+            Sapphire,
             a,
             b,
             c
@@ -373,7 +373,7 @@ public class OverlayConfig extends SettingsClass {
     public static class TerritoryFeed extends SettingsClass {
         public static TerritoryFeed INSTANCE;
 
-        @Setting(displayName = "Territory Feed" ,description = "Should the territory feed be displayed?", order = 0)
+        @Setting(displayName = "Territory Feed", description = "Should the territory feed be displayed?", order = 0)
         public boolean enabled = true;
 
         @Setting(displayName = "Animation Length", description = "How long (in seconds) should messages on the territory feed be displayed?")
@@ -462,7 +462,9 @@ public class OverlayConfig extends SettingsClass {
             BALANCE("Balance", "%le%\\L\\E %blocks%\\E\\B %emeralds%\\E (%money%\\E)"),
             UNPROCESSED_MATERIALS("Unprocessed Materials", "Unprocessed materials: %unprocessed% / %unprocessed_max%"),
             MEMORY_USAGE("Memory usage", "%mem_pct%\\% %mem_used%/%mem_max%MB"),
-            PING("Ping", "%ping%ms/15s");
+            PING("Ping", "%ping%ms/15s"),
+            BLOCKSPERSECOND("Blocks Per Second", "%bps% bps"),
+            BLOCKSPERMINUTE("Blocks Per Minute", "%bpm% bpm");
 
             public final String displayName;
             public final String value;
@@ -485,5 +487,13 @@ public class OverlayConfig extends SettingsClass {
         @Setting.Limitations.FloatLimit(min = .0f, max = 1f)
         public float backgroundAlpha = 0.3f;
 
+    }
+
+    @SettingsInfo(name = "consumable_timer_settings", displayPath = "Overlays/Consumable Timer")
+    public static class ConsumableTimer extends SettingsClass {
+        public static ConsumableTimer INSTANCE;
+
+        @Setting(displayName = "Show Effects", description = "Should the effects be displayed in the overlay?")
+        public boolean showEffects = true;
     }
 }

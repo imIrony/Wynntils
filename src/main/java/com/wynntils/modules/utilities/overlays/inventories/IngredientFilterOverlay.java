@@ -1,6 +1,11 @@
+/*
+ *  * Copyright © Wynntils - 2018 - 2020.
+ */
+
 package com.wynntils.modules.utilities.overlays.inventories;
 
 import com.wynntils.ModCore;
+import com.wynntils.Reference;
 import com.wynntils.core.events.custom.GuiOverlapEvent;
 import com.wynntils.core.framework.interfaces.Listener;
 import com.wynntils.modules.utilities.configs.UtilitiesConfig;
@@ -16,12 +21,12 @@ public class IngredientFilterOverlay implements Listener {
 
     @SubscribeEvent
     public void initGui(GuiOverlapEvent.ChestOverlap.InitGui e) {
-        if (!UtilitiesConfig.Items.INSTANCE.filterEnabled) return;
+        if (!Reference.onWorld || !UtilitiesConfig.Items.INSTANCE.filterEnabled) return;
 
-        e.getGuiInventory().getButtonList().add(
+        e.getButtonList().add(
                 new GuiButton(11,
-                        (e.getGuiInventory().width - e.getGuiInventory().getXSize()) / 2 - 20,
-                        (e.getGuiInventory().height - e.getGuiInventory().getYSize()) / 2 + 15,
+                        (e.getGui().width - e.getGui().getXSize()) / 2 - 20,
+                        (e.getGui().height - e.getGui().getYSize()) / 2 + 15,
                         18, 18,
                         RarityColorOverlay.getProfessionFilter()
                 )
@@ -30,16 +35,16 @@ public class IngredientFilterOverlay implements Listener {
 
     @SubscribeEvent
     public void drawScreen(GuiOverlapEvent.ChestOverlap.DrawScreen e) {
-        e.getGuiInventory().getButtonList().forEach(gb -> {
+        e.getButtonList().forEach(gb -> {
             if (gb.id == 11 && gb.isMouseOver()) {
-                e.getGuiInventory().drawHoveringText(professionArray.get(professionArray.indexOf(gb.displayString) + 1), e.getMouseX(), e.getMouseY());
+                e.getGui().drawHoveringText(professionArray.get(professionArray.indexOf(gb.displayString) + 1), e.getMouseX(), e.getMouseY());
             }
         });
     }
 
     @SubscribeEvent
     public void mouseClicked(GuiOverlapEvent.ChestOverlap.MouseClicked e) {
-        e.getGuiInventory().getButtonList().forEach(gb -> {
+        e.getButtonList().forEach(gb -> {
             if (gb.id == 11 && gb.isMouseOver()) {
                 char c;
                 if (e.getMouseButton() == 0) {

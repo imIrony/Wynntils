@@ -1,3 +1,6 @@
+/*
+ *  * Copyright © Wynntils - 2018 - 2020.
+ */
 
 package com.wynntils.modules.questbook.commands;
 
@@ -5,7 +8,7 @@ import com.wynntils.ModCore;
 import com.wynntils.Reference;
 import com.wynntils.core.framework.enums.ClassType;
 import com.wynntils.core.framework.instances.PlayerInfo;
-import com.wynntils.core.utils.Utils;
+import com.wynntils.core.utils.StringUtils;
 import com.wynntils.modules.questbook.instances.DiscoveryInfo;
 import com.wynntils.modules.questbook.managers.QuestManager;
 import net.minecraft.command.CommandBase;
@@ -51,7 +54,7 @@ public class CommandExportDiscoveries extends CommandBase implements IClientComm
         command.getStyle().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/exportDiscoveries"));
         if (!Reference.onWorld)
             throw new CommandException("You need to be in a Wynncraft world to run %s", command);
-        if (PlayerInfo.getPlayerInfo().getCurrentClass() == ClassType.NONE) 
+        if (PlayerInfo.getPlayerInfo().getCurrentClass() == ClassType.NONE)
             throw new CommandException("You need to select a class to run %s", command);
 
         File exportFolder = new File(Reference.MOD_STORAGE_ROOT, "export");
@@ -86,8 +89,8 @@ public class CommandExportDiscoveries extends CommandBase implements IClientComm
                 while (discoveriesIterator.hasNext()) {
                     DiscoveryInfo discovery = discoveriesIterator.next();
                     output.write(discovery.getMinLevel() + ",");
-                    output.write(Utils.firstCharToUpper(new String[] { discovery.getType().toString().toLowerCase() }) + ",");
-                    output.write(TextFormatting.getTextWithoutFormattingCodes(discovery.getName().replace("\u058E", "").replace("\u2019", "'")));
+                    output.write(StringUtils.firstCharToUpper(new String[] { discovery.getType().toString().toLowerCase() }) + ",");
+                    output.write(TextFormatting.getTextWithoutFormattingCodes(discovery.getName()));
                     if (discoveriesIterator.hasNext()) {
                         output.write("\n");
                     }

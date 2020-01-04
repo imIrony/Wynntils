@@ -1,11 +1,11 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.core.managers;
 
 import com.wynntils.Reference;
-import com.wynntils.core.utils.CommandResponse;
+import com.wynntils.core.utils.helpers.CommandResponse;
 
 import java.util.regex.Pattern;
 
@@ -17,11 +17,11 @@ public class PingManager {
     private static long lastCall = 0;
 
     public static void calculatePing() {
-        if(!Reference.onWorld || System.currentTimeMillis() - lastCall < 15000) return;
+        if (!Reference.onWorld || System.currentTimeMillis() - lastCall < 15000) return;
 
         CommandResponse response = new CommandResponse("/toggle", (m, t) -> {
             lastPing = System.currentTimeMillis() - lastCall;
-            Reference.LOGGER.info("Updated user ping to " + lastPing + "ms");
+            Reference.LOGGER.debug("Updated user ping to " + lastPing + "ms");
         }, pattern);
 
         response.setCancel(true);

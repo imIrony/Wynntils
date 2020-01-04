@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.questbook.overlays.hud;
@@ -7,7 +7,7 @@ package com.wynntils.modules.questbook.overlays.hud;
 import com.wynntils.core.framework.overlays.Overlay;
 import com.wynntils.core.framework.rendering.SmartFontRenderer;
 import com.wynntils.core.framework.rendering.colors.CommonColors;
-import com.wynntils.core.utils.Location;
+import com.wynntils.core.utils.objects.Location;
 import com.wynntils.modules.core.managers.CompassManager;
 import com.wynntils.modules.questbook.configs.QuestBookConfig;
 import com.wynntils.modules.questbook.instances.QuestInfo;
@@ -28,7 +28,7 @@ public class TrackedQuestOverlay extends Overlay {
 
         QuestInfo trackedQuest = QuestManager.getTrackedQuest();
 
-        if(trackedQuest == null || trackedQuest.getSplittedDescription() == null || trackedQuest.getSplittedDescription().size() == 0)
+        if (trackedQuest == null || trackedQuest.getSplittedDescription() == null || trackedQuest.getSplittedDescription().size() == 0)
             return;
 
         drawString("Tracked Quest Info: ", 0, 0, CommonColors.GREEN, SmartFontRenderer.TextAlignment.LEFT_RIGHT, SmartFontRenderer.TextShadow.OUTLINE);

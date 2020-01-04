@@ -1,3 +1,7 @@
+/*
+ *  * Copyright © Wynntils - 2018 - 2020.
+ */
+
 package com.wynntils.modules.utilities.overlays.hud;
 
 import com.wynntils.Reference;
@@ -5,11 +9,12 @@ import com.wynntils.core.framework.instances.PlayerInfo;
 import com.wynntils.core.framework.overlays.Overlay;
 import com.wynntils.core.framework.rendering.colors.CommonColors;
 import com.wynntils.core.framework.rendering.colors.CustomColor;
-import com.wynntils.core.utils.EmeraldSymbols;
 import com.wynntils.core.utils.Utils;
+import com.wynntils.core.utils.reference.EmeraldSymbols;
 import com.wynntils.modules.core.managers.PingManager;
 import com.wynntils.modules.richpresence.RichPresenceModule;
 import com.wynntils.modules.utilities.configs.OverlayConfig;
+import com.wynntils.modules.utilities.managers.SpeedometerManager;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import org.apache.commons.lang3.StringUtils;
@@ -190,6 +195,7 @@ public abstract class InfoOverlay extends Overlay {
                         case ARCHER: className = "archer"; break;
                         case WARRIOR: className = "warrior"; break;
                         case ASSASSIN: className = "assassin"; break;
+                        case SHAMAN: className = "shaman"; break;
                         default: className = null; break;
                     }
 
@@ -233,6 +239,10 @@ public abstract class InfoOverlay extends Overlay {
                 case "mem_max": case "memmax":
                     setMemory();
                     return Long.toString(maxMemory);
+                case "bps":
+                    return PlayerInfo.perFormat.format(SpeedometerManager.getCurrentSpeed());
+                case "bpm":
+                    return PlayerInfo.perFormat.format(SpeedometerManager.getCurrentSpeed() * 60);
                 case "%":
                     return "%";
                 default:
@@ -252,7 +262,7 @@ public abstract class InfoOverlay extends Overlay {
                 default:
                     // xXX, uXXXX, UXXXXXXXX
                     int codePoint = Integer.parseInt(escaped.substring(1), 16);
-                    if (Utils.isValidCodePoint(codePoint)) {
+                    if (Utils.StringUtils.isValidCodePoint(codePoint)) {
                         return new String(new int[]{ codePoint }, 0, 1);
                     }
                     return null;
@@ -283,11 +293,11 @@ public abstract class InfoOverlay extends Overlay {
         }
     }
 
-    public String doFormat(String format) {
+    public static String doFormat(String format) {
         return doFormat(format, new InfoFormatter());
     }
 
-    private String doFormat(String format, InfoFormatter formatter) {
+    private static String doFormat(String format, InfoFormatter formatter) {
         return formatter.doFormat(format);
     }
 }

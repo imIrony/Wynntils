@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils;
@@ -65,27 +65,26 @@ public class ModCore {
     public void postInit(FMLPostInitializationEvent e) {
 
         HashMap<String, String> conflicts = new HashMap<>();
-        for(ModContainer mod : Loader.instance().getActiveModList()) {
-            if(!mod.getModId().equalsIgnoreCase("labymod")) continue;
+        for (ModContainer mod : Loader.instance().getActiveModList()) {
+            if (!mod.getModId().equalsIgnoreCase("labymod")) continue;
 
             conflicts.put(mod.getName(), mod.getVersion());
         }
 
-        if(!conflicts.isEmpty()) throw new ModConflictScreen(conflicts);
+        if (!conflicts.isEmpty()) throw new ModConflictScreen(conflicts);
 
         FrameworkManager.postEnableModules();
-        FrameworkManager.registerCommands();
         Textures.loadTextures();
         Mappings.loadMappings();
 
-        //HeyZeer0: This will reload our cache if a texture or similar is applied
+        // HeyZeer0: This will reload our cache if a texture or similar is applied
         ((SimpleReloadableResourceManager)Minecraft.getMinecraft().getResourceManager()).registerReloadListener(resourceManager -> {
             Textures.loadTextures();
             Mappings.loadMappings();
         });
 
         if (MapConfig.INSTANCE.enabledMapIcons.containsKey("tnt")) {
-            MapConfig.INSTANCE.enabledMapIcons = MapConfig.INSTANCE.resetMapIcons(false);
+            MapConfig.INSTANCE.enabledMapIcons = MapConfig.resetMapIcons(false);
             MapConfig.INSTANCE.saveSettings(MapModule.getModule());
         }
 
@@ -96,7 +95,7 @@ public class ModCore {
             }
 
             @Override
-            public String call() throws Exception {
+            public String call() {
                 UpdateStream stream = CoreDBConfig.INSTANCE == null ? null : CoreDBConfig.INSTANCE.updateStream;
                 return "Running Wynntils v" + Reference.VERSION + " in " + stream + ", " + (Reference.developmentEnvironment ? "being a dev env" : "at a normal env");
             }

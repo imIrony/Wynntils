@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.core.framework.rendering.textures;
@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class Textures {
+
     public static void loadTextures() {
         List<Class<?>> textureClasses = new ArrayList<>();
 
@@ -21,17 +22,17 @@ public class Textures {
         textureClasses.add(Overlays.class);
         textureClasses.add(UIs.class);
         textureClasses.add(Map.class);
+        textureClasses.add(World.class);
 
-
-        for(Class<?> clazz : textureClasses) {
+        for (Class<?> clazz : textureClasses) {
             String path = Reference.MOD_ID + ":textures/" + clazz.getName().split("\\$")[1].toLowerCase(Locale.ROOT) + "/";
-            for(Field f : clazz.getDeclaredFields()) {
+            for (Field f : clazz.getDeclaredFields()) {
                 try {
                     if (f.get(null) == null && f.getType().isAssignableFrom(AssetsTexture.class)) {
                         String file = path + f.getName() + ".png";
                         f.set(null, new AssetsTexture(new ResourceLocation(file)));
                     }
-                } catch(Exception e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -51,7 +52,7 @@ public class Textures {
         public static AssetsTexture bars_bubbles;
         public static AssetsTexture hotbar;
         public static AssetsTexture toast;
-        public static AssetsTexture proffesions;
+        public static AssetsTexture professions;
     }
 
     public static class Map {
@@ -86,5 +87,11 @@ public class Textures {
         public static AssetsTexture quest_book;
 
         public static AssetsTexture tab_overlay;
+    }
+
+    public static class World {
+
+        public static AssetsTexture path_arrow;
+
     }
 }

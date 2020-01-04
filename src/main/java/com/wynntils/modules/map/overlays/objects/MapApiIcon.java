@@ -1,15 +1,20 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.map.overlays.objects;
 
 import com.google.gson.JsonObject;
+import com.wynntils.Reference;
 import com.wynntils.core.framework.rendering.ScreenRenderer;
 import com.wynntils.core.framework.rendering.textures.AssetsTexture;
 import com.wynntils.core.framework.rendering.textures.Mappings;
 import com.wynntils.core.framework.rendering.textures.Textures;
+import com.wynntils.modules.map.MapModule;
 import com.wynntils.modules.map.configs.MapConfig;
+import com.wynntils.modules.questbook.enums.QuestStatus;
+import com.wynntils.modules.questbook.instances.QuestInfo;
+import com.wynntils.modules.questbook.managers.QuestManager;
 import com.wynntils.webapi.WebManager;
 import com.wynntils.webapi.profiles.MapMarkerProfile;
 
@@ -19,6 +24,8 @@ public class MapApiIcon extends MapTextureIcon {
 
     public static final Map<String, String> MAPMARKERNAME_TRANSLATION = Collections.unmodifiableMap(new HashMap<String, String>() {{
         put("Content_Dungeon", "Dungeons");
+        put("Content_CorruptedDungeon", "Corrupted Dungeons");
+        put("Content_BossAltar", "Boss Altar");
         put("Merchant_Accessory", "Accessory Merchant");
         put("Merchant_Armour", "Armour Merchant");
         put("Merchant_Dungeon", "Dungeon Merchant");
@@ -43,6 +50,7 @@ public class MapApiIcon extends MapTextureIcon {
         put("Crop_Refinery", "Crop Refinery");
         put("NPC_TradeMarket", "Marketplace");
         put("Content_Quest", "Quests");
+        put("Content_Miniquest", "Mini-Quests");
         put("Special_Rune", "Runes");
         put("Special_RootsOfCorruption", "Nether Portal");
         put("Content_UltimateDiscovery", "Ultimate Discovery");
@@ -51,9 +59,29 @@ public class MapApiIcon extends MapTextureIcon {
         put("Merchant_Other", "Other Merchants");
         put("Special_LightRealm", "Light's Secret");
         put("Merchant_Emerald", "Emerald Merchant");
+        put("Profession_Weaponsmithing", "Weaponsmithing Station");
+        put("Profession_Armouring", "Armouring Station");
+        put("Profession_Alchemism", "Alchemism Station");
+        put("Profession_Jeweling", "Jeweling Station");
+        put("Profession_Tailoring", "Tailoring Station");
+        put("Profession_Scribing", "Scribing Station");
+        put("Profession_Cooking", "Cooking Station");
+        put("Profession_Woodworking", "Woodworking Station");
+        put("Merchant_Tool", "Tool Merchant");
     }});
 
-    public static final Map<String, String> MAPMARKERNAME_REVERSE_TRANSLATION = Collections.unmodifiableMap(new HashMap<String, String>(MAPMARKERNAME_TRANSLATION.size()){{
+    public static final Set<String> IGNORED_MARKERS = Collections.unmodifiableSet(new HashSet<String>() {{
+        for (String ignored : new String[]{
+            "Content_CorruptedDungeon"
+        }) {
+            add(ignored);
+            String translated = MAPMARKERNAME_TRANSLATION.get(ignored);
+            assert translated != null;
+            add(translated);
+        }
+    }});
+
+    public static final Map<String, String> MAPMARKERNAME_REVERSE_TRANSLATION = Collections.unmodifiableMap(new HashMap<String, String>(MAPMARKERNAME_TRANSLATION.size()) {{
         for (HashMap.Entry<String, String> entry : MAPMARKERNAME_TRANSLATION.entrySet()) {
             this.put(entry.getValue(), entry.getKey());
         }
@@ -67,7 +95,7 @@ public class MapApiIcon extends MapTextureIcon {
     private String translatedName;
 
     MapApiIcon(MapMarkerProfile mmp, MapConfig.IconTexture iconTexture) {
-        JsonObject iconMapping = Mappings.Map.map_icons_mappings.get(iconTexture == MapConfig.IconTexture.Classic ? "CLASSIC" : "MEDIVAL").getAsJsonObject().get(mmp.getIcon()).getAsJsonObject();
+        JsonObject iconMapping = Mappings.Map.map_icons_mappings.get(iconTexture == MapConfig.IconTexture.Classic ? "CLASSIC" : "MEDIEVAL").getAsJsonObject().get(mmp.getIcon()).getAsJsonObject();
 
         this.mmp = mmp;
 
@@ -128,7 +156,40 @@ public class MapApiIcon extends MapTextureIcon {
     }
 
     @Override public boolean isEnabled(boolean forMinimap) {
-        return (forMinimap ? MapConfig.INSTANCE.enabledMinimapIcons : MapConfig.INSTANCE.enabledMapIcons).getOrDefault(translatedName, true);
+        if (MapConfig.INSTANCE.hideCompletedQuests && (mmp.getIcon().equals("Content_Quest") || mmp.getIcon().equals("Content_Miniquest"))) {
+            QuestInfo questData = QuestManager.getCurrentQuestsData().get(mmp.getName());
+            if (questData != null && questData.getStatus() == QuestStatus.COMPLETED) {
+                return false;
+            }
+        }
+
+        Boolean enabled = (forMinimap ? MapConfig.INSTANCE.enabledMinimapIcons : MapConfig.INSTANCE.enabledMapIcons).get(translatedName);
+
+        if (enabled == null) {
+            // Missing some keys; Add them all
+            HashMap<String, Boolean> defaulted = MapConfig.resetMapIcons(false);
+            for (Map.Entry<String, Boolean> e : defaulted.entrySet()) {
+                String icon = e.getKey();
+                if (MapConfig.INSTANCE.enabledMapIcons.get(icon) == null) {
+                    MapConfig.INSTANCE.enabledMapIcons.put(icon, e.getValue());
+                }
+            }
+
+            defaulted = MapConfig.resetMapIcons(true);
+            for (Map.Entry<String, Boolean> e : defaulted.entrySet()) {
+                String icon = e.getKey();
+                if (MapConfig.INSTANCE.enabledMinimapIcons.get(icon) == null) {
+                    MapConfig.INSTANCE.enabledMinimapIcons.put(icon, e.getValue());
+                }
+            }
+
+            MapConfig.INSTANCE.saveSettings(MapModule.getModule());
+
+            enabled = (forMinimap ? MapConfig.INSTANCE.enabledMinimapIcons : MapConfig.INSTANCE.enabledMapIcons).get(translatedName);
+            if (enabled == null) enabled = Boolean.FALSE;
+        }
+
+        return enabled;
     }
 
     public MapMarkerProfile getMapMarkerProfile() {
@@ -164,6 +225,7 @@ public class MapApiIcon extends MapTextureIcon {
             medievalApiMarkers.clear();
         }
         for (MapMarkerProfile mmp : WebManager.getApiMarkers()) {
+            if (IGNORED_MARKERS.contains(mmp.getIcon())) continue;
             if (isApiMarkerValid(mmp, MapConfig.IconTexture.Classic)) classicApiMarkers.add(new MapApiIcon(mmp, MapConfig.IconTexture.Classic));
             if (isApiMarkerValid(mmp, MapConfig.IconTexture.Medieval)) medievalApiMarkers.add(new MapApiIcon(mmp, MapConfig.IconTexture.Medieval));
         }
@@ -193,6 +255,7 @@ public class MapApiIcon extends MapTextureIcon {
                 return;
         }
         for (MapMarkerProfile mmp : WebManager.getApiMarkers()) {
+            if (IGNORED_MARKERS.contains(mmp.getIcon())) continue;
             if (isApiMarkerValid(mmp, iconTexture)) markers.add(new MapApiIcon(mmp, iconTexture));
         }
     }
@@ -213,7 +276,11 @@ public class MapApiIcon extends MapTextureIcon {
     }
 
     private static boolean isApiMarkerValid(MapMarkerProfile mmp, MapConfig.IconTexture iconTexture) {
-        return Mappings.Map.map_icons_mappings.get(iconTexture == MapConfig.IconTexture.Classic ? "CLASSIC" : "MEDIVAL").getAsJsonObject().has(mmp.getIcon());
+        boolean valid = Mappings.Map.map_icons_mappings.get(iconTexture == MapConfig.IconTexture.Classic ? "CLASSIC" : "MEDIEVAL").getAsJsonObject().has(mmp.getIcon());
+        if (!valid && Reference.developmentEnvironment) {
+            Reference.LOGGER.warn("No " + iconTexture + " texture for \"" + mmp.getIcon() + "\"");
+        }
+        return valid;
     }
 
     /**
@@ -224,7 +291,7 @@ public class MapApiIcon extends MapTextureIcon {
         if (!MAPMARKERNAME_TRANSLATION.containsKey(icon)) {
             throw new RuntimeException("MapWaypointIcon.getFree(\"" + icon + "\"): invalid name");
         }
-        return new MapApiIcon(new MapMarkerProfile(null, Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE, icon), iconTexture);
+        return new MapApiIcon(new MapMarkerProfile(null, NO_LOCATION, NO_LOCATION, NO_LOCATION, icon), iconTexture);
     }
 
 }

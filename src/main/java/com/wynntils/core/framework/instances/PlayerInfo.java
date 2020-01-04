@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.core.framework.instances;
@@ -8,7 +8,8 @@ import com.wynntils.core.events.custom.WynnClassChangeEvent;
 import com.wynntils.core.framework.FrameworkManager;
 import com.wynntils.core.framework.enums.ClassType;
 import com.wynntils.core.framework.instances.containers.PartyContainer;
-import com.wynntils.core.utils.Utils;
+import com.wynntils.core.utils.ItemUtils;
+import com.wynntils.core.utils.StringUtils;
 import com.wynntils.core.utils.reflections.ReflectionFields;
 import com.wynntils.modules.core.CoreModule;
 import com.wynntils.modules.core.config.CoreDBConfig;
@@ -27,8 +28,8 @@ import java.util.regex.Pattern;
 public class PlayerInfo {
 
     private static PlayerInfo instance;
-    private static final int[] xpNeeded = new int[] {110,190,275,385,505,645,790,940,1100,1370,1570,1800,2090,2400,2720,3100,3600,4150,4800,5300,5900,6750,7750,8900,10200,11650,13300,15200,17150,19600,22100,24900,28000,31500,35500,39900,44700,50000,55800,62000,68800,76400,84700,93800,103800,114800,126800,140000,154500,170300,187600,206500,227000,249500,274000,300500,329500,361000,395000,432200,472300,515800,562800,613700,668600,728000,792000,860000,935000,1040400,1154400,1282600,1414800,1567500,1730400,1837000,1954800,2077600,2194400,2325600,2455000,2645000,2845000,3141100,3404710,3782160,4151400,4604100,5057300,5533840,6087120,6685120,7352800,8080800,8725600,9578400,10545600,11585600,12740000,14418250,16280000,21196500,200268440};
-    private static final DecimalFormat perFormat = new DecimalFormat("##.#");
+    private static final int[] xpNeeded = new int[] {110,190,275,385,505,645,790,940,1100,1370,1570,1800,2090,2400,2720,3100,3600,4150,4800,5300,5900,6750,7750,8900,10200,11650,13300,15200,17150,19600,22100,24900,28000,31500,35500,39900,44700,50000,55800,62000,68800,76400,84700,93800,103800,114800,126800,140000,154500,170300,187600,206500,227000,249500,274000,300500,329500,361000,395000,432200,472300,515800,562800,613700,668600,728000,792000,860000,935000,1040400,1154400,1282600,1414800,1567500,1730400,1837000,1954800,2077600,2194400,2325600,2455000,2645000,2845000,3141100,3404710,3782160,4151400,4604100,5057300,5533840,6087120,6685120,7352800,8080800,8725600,9578400,10545600,11585600,12740000,14418250,16280000,21196500,23315505};
+    public static final DecimalFormat perFormat = new DecimalFormat("##.#");
     private static final Pattern actionbarPattern = Pattern.compile("(?:§❤ *([0-9]+)/([0-9]+))?.*? {2,}(?:§([LR])§-(?:§([LR])§-§([LR])?)?)?.*".replace("§", "(?:§[0-9a-fklmnor])*"));
     private static final boolean[] noSpell = new boolean[0];
 
@@ -71,7 +72,7 @@ public class PlayerInfo {
             this.lastActionBar = actionBar;
 
             if (actionBar.contains("|") || actionBar.contains("_")) {
-                specialActionBar = Utils.getCutString(actionBar, "    ", "    " + TextFormatting.AQUA, false);
+                specialActionBar = StringUtils.getCutString(actionBar, "    ", "    " + TextFormatting.AQUA, false);
             } else {
                 specialActionBar = null;
             }
@@ -127,7 +128,7 @@ public class PlayerInfo {
     }
 
     public void updatePlayerClass(ClassType currentClass) {
-        if(currentClass != ClassType.NONE) {
+        if (currentClass != ClassType.NONE) {
             CoreDBConfig.INSTANCE.lastClass = currentClass;
             CoreDBConfig.INSTANCE.saveSettings(CoreModule.getModule());
         }
@@ -237,7 +238,7 @@ public class PlayerInfo {
     }
 
     public static PlayerInfo getPlayerInfo() {
-        if(instance == null)
+        if (instance == null)
             return new PlayerInfo(Minecraft.getMinecraft());
         else
             return instance;
@@ -248,7 +249,7 @@ public class PlayerInfo {
      */
     public int getMoney() {
         if (mc.player == null) return 0;
-        return Utils.countMoney(mc.player.inventory);
+        return ItemUtils.countMoney(mc.player.inventory);
     }
 
     private static final Pattern unprocessedNameRegex = Pattern.compile("^§fUnprocessed [a-zA-Z ]+§8 \\[(?:0|[1-9][0-9]*)/([1-9][0-9]*)]$");
@@ -277,7 +278,7 @@ public class PlayerInfo {
             Matcher nameMatcher = unprocessedNameRegex.matcher(it.getDisplayName());
             if (!nameMatcher.matches()) continue;
 
-            NBTTagList lore = Utils.getLoreTag(it);
+            NBTTagList lore = ItemUtils.getLoreTag(it);
             if (lore == null || lore.tagCount() == 0) continue;
 
             Matcher loreMatcher = unprocessedLoreRegex.matcher(lore.getStringTagAt(0));

@@ -1,3 +1,7 @@
+/*
+ *  * Copyright © Wynntils - 2018 - 2020.
+ */
+
 package com.wynntils.modules.map.overlays.objects;
 
 import com.wynntils.core.framework.rendering.ScreenRenderer;
@@ -73,6 +77,10 @@ public class MapPathWaypointIcon extends MapIcon {
         return true;
     }
 
+    @Override
+    public boolean hasDynamicLocation() {
+        return false;
+    }
 
     @Override
     public void renderAt(ScreenRenderer renderer, float centreX, float centreZ, float sizeMultiplier, float blockScale) {

@@ -1,10 +1,16 @@
+/*
+ *  * Copyright © Wynntils - 2018 - 2020.
+ */
+
 package com.wynntils.webapi;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.wynntils.Reference;
-import com.wynntils.core.utils.MD5Verification;
+import com.wynntils.core.utils.helpers.MD5Verification;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -101,6 +107,16 @@ public class WebRequestHandler {
         }
 
         /**
+         * As {@link #handle(Predicate) handle}, but the data is parsed as JSON and converted into an Array
+         */
+        public Request handleJsonArray(Predicate<JsonArray> handler) {
+            return handleJson(j -> {
+                if (!j.isJsonArray()) return false;
+                return handler.test(j.getAsJsonArray());
+            });
+        }
+
+        /**
          * As {@link #handle(Predicate) handle}, but the data is parsed by {@link WebReader#fromString(String) WebReader}
          */
         public Request handleWebReader(Predicate<WebReader> handler) {
@@ -172,7 +188,7 @@ public class WebRequestHandler {
         }
     }
 
-    private ExecutorService pool = Executors.newFixedThreadPool(4);
+    private ExecutorService pool = Executors.newFixedThreadPool(4, new ThreadFactoryBuilder().setNameFormat("wynntils-web-request-pool-%d").build());
     private ArrayList<Request> requests = new ArrayList<>();
     private int maxParallelGroup = 0;
     private int dispatchId = 0;
@@ -222,7 +238,7 @@ public class WebRequestHandler {
             }
 
             for (Request request : requests) {
-                if(request.currentlyHandling != 0) continue;
+                if (request.currentlyHandling != 0) continue;
 
                 anyRequests = true;
                 request.currentlyHandling = 1;
@@ -239,7 +255,7 @@ public class WebRequestHandler {
                 return null;
             }
 
-            Thread t = new Thread(() -> handleDispatch(thisDispatch, groupedRequests, 0));
+            Thread t = new Thread(() -> handleDispatch(thisDispatch, groupedRequests, 0), "wynntils-webrequesthandler");
             t.start();
             return t;
         }

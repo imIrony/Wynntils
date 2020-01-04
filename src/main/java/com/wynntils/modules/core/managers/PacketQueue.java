@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.core.managers;
@@ -35,10 +35,10 @@ public class PacketQueue {
     }
 
     public static void checkResponse(Packet<?> response) {
-        if(complexQueue.size() == 0) return;
+        if (complexQueue.size() == 0) return;
 
         PacketResponse r = complexQueue.get(0);
-        if(!r.isResponseValid(response)) return;
+        if (!r.isResponseValid(response)) return;
 
         complexQueue.remove(0);
     }
@@ -48,7 +48,7 @@ public class PacketQueue {
     }
 
     public static void proccessQueue() {
-        if(complexQueue.isEmpty()) return;
+        if (complexQueue.isEmpty()) return;
 
         complexQueue.get(0).sendPacket();
     }

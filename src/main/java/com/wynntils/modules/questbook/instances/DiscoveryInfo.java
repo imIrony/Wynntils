@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.questbook.instances;
@@ -24,8 +24,8 @@ public class DiscoveryInfo {
         ArrayList<String> splittedDescription = new ArrayList<>();
         StringBuilder currentMessage = new StringBuilder();
         int chars = 0;
-        for(String x : description.split(" ")) {
-            if(chars + x.length() > 37) {
+        for (String x : description.split(" ")) {
+            if (chars + x.length() > 37) {
                 splittedDescription.add(currentMessage.toString());
                 currentMessage = new StringBuilder(x);
                 currentMessage.append(' ');

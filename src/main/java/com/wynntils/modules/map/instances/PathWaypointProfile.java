@@ -1,3 +1,7 @@
+/*
+ *  * Copyright © Wynntils - 2018 - 2020.
+ */
+
 package com.wynntils.modules.map.instances;
 
 import com.google.gson.*;
@@ -203,7 +207,7 @@ public class PathWaypointProfile {
             return deserialized;
         }
 
-        private PathWaypointProfile deserializeOne(JsonObject o, JsonDeserializationContext context) {
+        private static PathWaypointProfile deserializeOne(JsonObject o, JsonDeserializationContext context) {
             JsonElement nameEl = o.get("name");
             JsonElement isCircularEl = o.get("isCircular");
             JsonElement isEnabledEl = o.get("isEnabled");
@@ -258,7 +262,7 @@ public class PathWaypointProfile {
             return serialized;
         }
 
-        private JsonObject serializeOne(PathWaypointProfile wp, JsonSerializationContext context) {
+        private static JsonObject serializeOne(PathWaypointProfile wp, JsonSerializationContext context) {
             JsonObject serialized = new JsonObject();
             serialized.addProperty("name", wp.name);
             serialized.addProperty("isCircular", wp.isCircular);

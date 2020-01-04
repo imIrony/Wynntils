@@ -1,3 +1,7 @@
+/*
+ *  * Copyright © Wynntils - 2018 - 2020.
+ */
+
 package com.wynntils.modules.map.overlays.ui;
 
 import com.wynntils.core.framework.rendering.ScreenRenderer;
@@ -33,8 +37,8 @@ public class WorldMapSettingsUI extends GuiScreen {
     private GuiButton textureButton, nextPageButton, previousPageButton;
 
     public WorldMapSettingsUI() {
-        enabledMapIcons = MapConfig.INSTANCE.resetMapIcons(false);
-        enabledMinimapIcons = MapConfig.INSTANCE.resetMapIcons(true);
+        enabledMapIcons = MapConfig.resetMapIcons(false);
+        enabledMinimapIcons = MapConfig.resetMapIcons(true);
         for (String key : enabledMapIcons.keySet()) {
             Boolean fromMapConfig = MapConfig.INSTANCE.enabledMapIcons.getOrDefault(key, null);
             Boolean fromMinimapConfig = MapConfig.INSTANCE.enabledMinimapIcons.getOrDefault(key, null);
@@ -119,8 +123,8 @@ public class WorldMapSettingsUI extends GuiScreen {
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        if (keyCode == Minecraft.getMinecraft().gameSettings.keyBindInventory.getKeyCode() || // DEFAULT: E
-                keyCode == MapModule.getModule().getMapKey().getKeyBinding().getKeyCode()) { //DEFAULT: M
+        if (keyCode == Minecraft.getMinecraft().gameSettings.keyBindInventory.getKeyCode() ||  // DEFAULT: E
+                keyCode == MapModule.getModule().getMapKey().getKeyBinding().getKeyCode()) {  // DEFAULT: M
             Utils.displayGuiScreen(new MainWorldMapUI());
         }
         super.keyTyped(typedChar, keyCode);
@@ -156,8 +160,8 @@ public class WorldMapSettingsUI extends GuiScreen {
         if (button.id == 100) {
             Utils.displayGuiScreen(new MainWorldMapUI());
         } else if (button.id == 102) {
-            MapConfig.INSTANCE.enabledMapIcons = MapConfig.INSTANCE.resetMapIcons(false);
-            MapConfig.INSTANCE.enabledMinimapIcons = MapConfig.INSTANCE.resetMapIcons(true);
+            MapConfig.INSTANCE.enabledMapIcons = MapConfig.resetMapIcons(false);
+            MapConfig.INSTANCE.enabledMinimapIcons = MapConfig.resetMapIcons(true);
             for (GuiButton cb : this.buttonList) {
                 if (cb instanceof Button) {
                     MapConfig.INSTANCE.enabledMapIcons.put(((Button) cb).key, ((Button) cb).onMainMap());
@@ -169,8 +173,8 @@ public class WorldMapSettingsUI extends GuiScreen {
             MapConfig.INSTANCE.saveSettings(MapModule.getModule());
             Utils.displayGuiScreen(new MainWorldMapUI());
         } else if (button.id == 101) {
-            this.enabledMapIcons = MapConfig.INSTANCE.resetMapIcons(false);
-            this.enabledMinimapIcons = MapConfig.INSTANCE.resetMapIcons(true);
+            this.enabledMapIcons = MapConfig.resetMapIcons(false);
+            this.enabledMinimapIcons = MapConfig.resetMapIcons(true);
             page = 0;
             for (GuiButton b : this.buttonList) {
                 if (b instanceof Button) {

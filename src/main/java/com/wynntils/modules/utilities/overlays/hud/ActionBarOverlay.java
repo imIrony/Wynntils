@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.utilities.overlays.hud;
@@ -17,12 +17,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 
 public class ActionBarOverlay extends Overlay {
-
-    public int y = 0;
 
 //    @Setting(displayName = "Text Shadow", description = "The Action Bar Text shadow type")
 //    public SmartFontRenderer.TextShadow shadow = SmartFontRenderer.TextShadow.OUTLINE;
@@ -33,7 +32,7 @@ public class ActionBarOverlay extends Overlay {
 
     @Override
     public void render(RenderGameOverlayEvent.Pre event) {
-        if(!Reference.onWorld) return;
+        if (!Reference.onWorld) return;
         if (event.getType() == RenderGameOverlayEvent.ElementType.EXPERIENCE || event.getType() == RenderGameOverlayEvent.ElementType.JUMPBAR) {
             String lastActionBar = PlayerInfo.getPlayerInfo().getLastActionBar();
             if (lastActionBar == null) return;
@@ -52,11 +51,12 @@ public class ActionBarOverlay extends Overlay {
             int padding = 3;
             int y = 0;
 
-            String lCoord = TextFormatting.GRAY.toString() + (int) ScreenRenderer.mc.player.posX;
+            BlockPos blockPos = new BlockPos(ScreenRenderer.mc.player);
+            String lCoord = TextFormatting.GRAY.toString() + blockPos.getX();
             String middleCoord = TextFormatting.GREEN + Utils.getPlayerDirection(ScreenRenderer.mc.player.rotationYaw);
-            String rCoord = TextFormatting.GRAY.toString() + (int) ScreenRenderer.mc.player.posZ;
-            //Order:
-            //Powder % | RLR | Sprint | and if there is nothing more coordinates
+            String rCoord = TextFormatting.GRAY.toString() + blockPos.getZ();
+            // Order:
+            // Powder % | RLR | Sprint | and if there is nothing more coordinates
             if (OverlayConfig.INSTANCE.splitCoordinates && OverlayConfig.INSTANCE.actionBarCoordinates) {
                 drawString(lCoord, (0 - ScreenRenderer.mc.fontRenderer.getStringWidth(lCoord) - ScreenRenderer.mc.fontRenderer.getStringWidth(middleCoord) / 2 - padding), y, CommonColors.BLACK, SmartFontRenderer.TextAlignment.LEFT_RIGHT, OverlayConfig.INSTANCE.textShadow);
                 drawString(middleCoord, 0, y, CommonColors.BLACK, SmartFontRenderer.TextAlignment.MIDDLE, OverlayConfig.INSTANCE.textShadow);

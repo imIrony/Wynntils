@@ -1,9 +1,10 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.modules.richpresence.events;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.wynntils.ModCore;
 import com.wynntils.Reference;
 import com.wynntils.core.events.custom.WarStageEvent;
@@ -32,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ServerEvents implements Listener {
 
-    public static ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    public static ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("wynntils-richpresence-location-updater").build());
     public static ScheduledFuture updateTimer;
 
     /**
@@ -58,7 +59,7 @@ public class ServerEvents implements Listener {
             ServerEvents.forceUpdate = false;
 
             for (TerritoryProfile pf : WebManager.getTerritories().values()) {
-                if(pf.insideArea((int)pl.posX, (int)pl.posZ)) {
+                if (pf.insideArea((int)pl.posX, (int)pl.posZ)) {
                     RichPresenceModule.getModule().getData().setLocation(pf.getFriendlyName());
                     RichPresenceModule.getModule().getData().setUnknownLocation(false);
 
@@ -66,13 +67,13 @@ public class ServerEvents implements Listener {
 
                     if (!RichPresenceConfig.INSTANCE.enableRichPresence) return;
 
-                    if(PlayerInfo.getPlayerInfo().getCurrentClass() != ClassType.NONE) {
+                    if (PlayerInfo.getPlayerInfo().getCurrentClass() != ClassType.NONE) {
                         ModCore.mc().addScheduledTask(() -> {
                             if (Reference.onWorld) {
                                 RichPresenceModule.getModule().getRichPresence().updateRichPresence("World " + Reference.getUserWorld().replace("WC", ""), "In " + RichPresenceModule.getModule().getData().getLocation(), PlayerInfo.getPlayerInfo().getCurrentClass().toString().toLowerCase(), getPlayerInfo(), currentTime);
                             }
                         });
-                    }else {
+                    } else {
                         ModCore.mc().addScheduledTask(() -> {
                             if (Reference.onWorld) {
                                 RichPresenceModule.getModule().getRichPresence().updateRichPresence("World " + Reference.getUserWorld().replace("WC", ""), "In " + RichPresenceModule.getModule().getData().getLocation(), getPlayerInfo(), currentTime);

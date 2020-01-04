@@ -1,3 +1,7 @@
+/*
+ *  * Copyright © Wynntils - 2018 - 2020.
+ */
+
 package com.wynntils.modules.core.commands;
 
 import com.google.common.collect.Lists;
@@ -20,7 +24,7 @@ import java.util.*;
 
 
 public class CommandServer extends CommandBase implements IClientCommand {
-    private List<String> serverTypes = Lists.newArrayList("WC", "lobby", "GM", "WAR", "HB", "EU");
+    private List<String> serverTypes = Lists.newArrayList("WC", "lobby", "GM", "DEV", "WAR", "HB", "EU");
 
     @Override
     public boolean allowUsageWithoutPrefix(ICommandSender sender, String message) {
@@ -41,7 +45,7 @@ public class CommandServer extends CommandBase implements IClientCommand {
     public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
         if (Reference.onServer) {
             if (args.length >= 1) {
-                //String option = args[0];
+                // String option = args[0];
                 switch (args[0].toLowerCase()) {
                     case "list":
                     case "ls":
@@ -66,14 +70,13 @@ public class CommandServer extends CommandBase implements IClientCommand {
         String selectedType = null;
 
         for (String arg : args) {
-            argparser:
             for (String type : serverTypes) {
                 if (arg.equalsIgnoreCase(type)) {
                     selectedType = type;
-                    break argparser;
+                    break;
                 }
             }
-            switch(arg.toLowerCase()) {
+            switch (arg.toLowerCase()) {
                 case "group":
                 case "g":
                     options.add("group");
@@ -115,10 +118,10 @@ public class CommandServer extends CommandBase implements IClientCommand {
 
         String finalSelectedType = selectedType;
         Utils.runAsync(() -> {
-            try{
+            try {
                 HashMap<String, ArrayList<String>> onlinePlayers = WebManager.getOnlinePlayers();
 
-                if(options.contains("group")) {
+                if (options.contains("group") && finalSelectedType == null) {
                     TextComponentString toEdit = new TextComponentString("Available servers" +
                             (options.contains("count") ? String.format(" (%d)", onlinePlayers.size()): "") + ":\n");
 
@@ -128,21 +131,21 @@ public class CommandServer extends CommandBase implements IClientCommand {
                     }
                     toEdit.appendSibling(getFilteredServerList(onlinePlayers, serverTypes.get(serverTypes.size() - 1), options));
 
-                    ChatOverlay.getChat().printUnloggedChatMessage(toEdit, messageId); //updates the message
+                    ChatOverlay.getChat().printUnloggedChatMessage(toEdit, messageId);  // updates the message
                     return;
                 }
-                
-                if(finalSelectedType == null) {
+
+                if (finalSelectedType == null) {
                     ChatOverlay.getChat().printUnloggedChatMessage(
                             getFilteredServerList(onlinePlayers, "", options), messageId
-                    ); //updates the message
+                    );  // updates the message
                     return;
                 }
 
                 ChatOverlay.getChat().printUnloggedChatMessage(
                         getFilteredServerList(onlinePlayers, finalSelectedType, options), messageId
-                ); //updates the message
-            }catch (Exception ex) {
+                );  // updates the message
+            } catch (Exception ex) {
                 ChatOverlay.getChat().printUnloggedChatMessage(
                         new TextComponentString(
                                 TextFormatting.RED +
@@ -158,45 +161,59 @@ public class CommandServer extends CommandBase implements IClientCommand {
         });
     }
 
-    private void serverInfo(MinecraftServer server, ICommandSender sender, String[] args) {
+    private static void serverInfo(MinecraftServer server, ICommandSender sender, String[] args) {
         int messageId = Utils.getRandom().nextInt(Integer.MAX_VALUE);
         ChatOverlay.getChat().printUnloggedChatMessage(
                 new TextComponentString(TextFormatting.GRAY + "Calculating Server Information..."
                 ), messageId);
 
         Utils.runAsync(() -> {
+            if (args.length == 0) {
+                ChatOverlay.getChat().printUnloggedChatMessage(
+                        new TextComponentString("Usage: /s info <serverID>"), messageId);
+                return;
+            }
+            if (args.length > 1) {
+                ChatOverlay.getChat().printUnloggedChatMessage(
+                        new TextComponentString("Too many arguments\nUsage: /s info <serverID>"), messageId);
+                return;
+            }
+            if (args[0].equalsIgnoreCase("help")) {
+                ChatOverlay.getChat().printUnloggedChatMessage(
+                        new TextComponentString("Usage: /s info <serverID>"), messageId);
+                return;
+            }
+            // args.length == 1 and no help
             try {
                 HashMap<String, ArrayList<String>> onlinePlayers = WebManager.getOnlinePlayers();
-                if (args.length >= 1) {
-                    for (String serverName : onlinePlayers.keySet()) {
-                        if (args[0].equalsIgnoreCase(serverName)) {
-                            TextComponentString text = new TextComponentString(String.format("%s: ", serverName));
-                            TextComponentString playerText = new TextComponentString("");
+                for (String serverName : onlinePlayers.keySet()) {
+                    if (args[0].equalsIgnoreCase(serverName)) {
+                        TextComponentString text = new TextComponentString(String.format("%s: ", serverName));
+                        TextComponentString playerText = new TextComponentString("");
 
-                            ArrayList<String> players = onlinePlayers.get(serverName);
+                        ArrayList<String> players = onlinePlayers.get(serverName);
 
+                        if (players.size() > 0) {
                             for (String player : players.subList(0, players.size() - 1)) {
                                 playerText.appendText(String.format("%s, ", player));
                             }
                             playerText.appendText(players.get(players.size() - 1));
                             playerText.getStyle().setColor(TextFormatting.GRAY);
                             text.appendSibling(playerText);
-
-                            text.appendText("\nTotal online players: ");
-                            TextComponentString playerCountText = new TextComponentString(String.valueOf(players.size()));
-                            playerCountText.getStyle().setColor(TextFormatting.GRAY);
-                            text.appendSibling(playerCountText);
-
-                            ChatOverlay.getChat().printUnloggedChatMessage(text, messageId);
-                            return;
                         }
+
+                        text.appendText("\nTotal online players: ");
+                        TextComponentString playerCountText = new TextComponentString(Integer.toString(players.size()));
+                        playerCountText.getStyle().setColor(TextFormatting.GRAY);
+                        text.appendSibling(playerCountText);
+
+                        ChatOverlay.getChat().printUnloggedChatMessage(text, messageId);
+                        return;
                     }
-                    ChatOverlay.getChat().printUnloggedChatMessage(
-                            new TextComponentString(String.format("Unknown server ID: %s", args[0])), messageId);
-                } else { //args.length == 0
-                    ChatOverlay.getChat().printUnloggedChatMessage(
-                            new TextComponentString("Usage: /s info <serverID>"), messageId);
                 }
+                ChatOverlay.getChat().printUnloggedChatMessage(
+                        new TextComponentString(String.format("Unknown server ID: %s", args[0])), messageId);
+
             } catch (Exception e) {
                 ChatOverlay.getChat().printUnloggedChatMessage(
                         new TextComponentString(
@@ -213,7 +230,7 @@ public class CommandServer extends CommandBase implements IClientCommand {
         });
     }
 
-    private TextComponentString getFilteredServerList(HashMap<String, ArrayList<String>> onlinePlayers,
+    private static TextComponentString getFilteredServerList(HashMap<String, ArrayList<String>> onlinePlayers,
                                                        String filter,
                                                        List<String> options) {
         TextComponentString text = new TextComponentString("");
@@ -239,7 +256,7 @@ public class CommandServer extends CommandBase implements IClientCommand {
             text.appendText(String.format("%s:\n", filter));
         }
 
-        if(serverCount == 0) {
+        if (serverCount == 0) {
             serverListText.appendText("none");
             serverListText.getStyle().setColor(TextFormatting.DARK_GRAY);
             text.getStyle().setColor(TextFormatting.GRAY);
@@ -261,11 +278,16 @@ public class CommandServer extends CommandBase implements IClientCommand {
             case "l":
                 List<String> arguments = Arrays.asList(Arrays.copyOfRange(args, 1, args.length));
                 if (arguments.size() > 1 && arguments.get(0).equals("help"))
-                    return Collections.EMPTY_LIST;
+                    return Collections.emptyList();
 
                 boolean containsServerType = arguments.stream().anyMatch((arg) -> {
+                    List<String> incompatibilities = new ArrayList<>(serverTypes);
+                    incompatibilities.add("group");
+                    return incompatibilities.contains(arg);
+                });
+
+                boolean containsGroup = arguments.stream().anyMatch((arg) -> {
                     List<String> incompatibilities = new ArrayList<>();
-                    incompatibilities.addAll(serverTypes);
                     incompatibilities.add("sort");
                     incompatibilities.add("group");
                     return incompatibilities.contains(arg);
@@ -275,8 +297,12 @@ public class CommandServer extends CommandBase implements IClientCommand {
 
                 if (!containsServerType) {
                     possibleArguments.addAll(serverTypes);
+                    if (!containsGroup) {
+                        possibleArguments.add("group");
+                    }
+                }
+                if (!containsGroup) {
                     possibleArguments.add("sort");
-                    possibleArguments.add("group");
                 }
                 possibleArguments.add("count");
                 if (arguments.size() == 1) {
@@ -286,7 +312,7 @@ public class CommandServer extends CommandBase implements IClientCommand {
 
                 return getListOfStringsMatchingLastWord(args, possibleArguments);
         }
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2019.
+ *  * Copyright © Wynntils - 2018 - 2020.
  */
 
 package com.wynntils.webapi.account;
@@ -10,7 +10,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.wynntils.ModCore;
 import com.wynntils.Reference;
-import com.wynntils.core.utils.MD5Verification;
+import com.wynntils.core.utils.helpers.MD5Verification;
 import com.wynntils.webapi.WebManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.CryptManager;
@@ -31,7 +31,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public class WynntilsAccount {
 
-    private static ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("Wynntils Accounts").build());
+    private static ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("wynntils-accounts-%d").build());
 
     String token;
     boolean ready = false;
@@ -51,13 +51,13 @@ public class WynntilsAccount {
     }
 
     public void updateDiscord(String id, String username) {
-        if(!ready || WebManager.getApiUrls() == null) return;
+        if (!ready || WebManager.getApiUrls() == null) return;
 
         service.submit(() -> {
             try {
                 URLConnection st = new URL(WebManager.getApiUrls().get("UserAccount") + "updateDiscord/" + token).openConnection();
 
-                //HeyZeer0: Request below
+                // HeyZeer0: Request below
                 JsonObject body = new JsonObject();
                 body.addProperty("id", id);
                 body.addProperty("username", username);
@@ -74,7 +74,7 @@ public class WynntilsAccount {
                 try {
                     outputStream = st.getOutputStream();
                     IOUtils.write(bodyBytes, outputStream);
-                }catch (Exception ex) {
+                } catch (Exception ex) {
                     ex.printStackTrace();
                     return;
                 } finally {
@@ -82,12 +82,12 @@ public class WynntilsAccount {
                 }
 
                 Reference.LOGGER.info("Updating user Discord ID");
-            }catch (Exception ex) { ex.printStackTrace(); }
+            } catch (Exception ex) { ex.printStackTrace(); }
         });
     }
 
     public void uploadConfig(String fileName, String base64) {
-        if(!ready || configurationUploader == null) return;
+        if (!ready || configurationUploader == null) return;
 
         configurationUploader.queueConfig(fileName, base64);
     }
@@ -166,7 +166,7 @@ public class WynntilsAccount {
                 encondedConfigs.put(objs.getKey(), objs.getValue().getAsString());
             }
 
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
 
             Reference.LOGGER.error("Failed to connect to Wynntils Accounts trying again!");
