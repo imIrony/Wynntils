@@ -44,8 +44,12 @@ public class ChestReplacer extends GuiChest {
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        if (FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.DrawScreen.Pre(this, mouseX, mouseY, partialTicks))) {
+            return;
+        }
+
         super.drawScreen(mouseX, mouseY, partialTicks);
-        FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.DrawScreen(this, mouseX, mouseY, partialTicks));
+        FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.DrawScreen.Post(this, mouseX, mouseY, partialTicks));
     }
 
     @Override
@@ -55,9 +59,27 @@ public class ChestReplacer extends GuiChest {
     }
 
     @Override
+    protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
+        if (!FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.MouseClickMove(this, mouseX, mouseY, clickedMouseButton, timeSinceLastClick)))
+            super.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
+    }
+
+    @Override
+    public void handleMouseInput() throws IOException {
+        if (!FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.HandleMouseInput(this)))
+            super.handleMouseInput();
+    }
+
+    @Override
     public void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         super.drawGuiContainerForegroundLayer(mouseX, mouseY);
         FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.DrawGuiContainerForegroundLayer(this, mouseX, mouseY));
+    }
+
+    @Override
+    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+        super.drawGuiContainerBackgroundLayer(partialTicks, mouseX, mouseY);
+        FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.DrawGuiContainerBackgroundLayer(this, mouseX, mouseY));
     }
 
     @Override
@@ -67,14 +89,28 @@ public class ChestReplacer extends GuiChest {
     }
 
     @Override
+    public void renderHoveredToolTip(int x, int y) {
+        if (FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.HoveredToolTip.Pre(this, x, y))) return;
+
+        super.renderHoveredToolTip(x, y);
+        FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.HoveredToolTip.Post(this, x, y));
+    }
+
+    @Override
     public void renderToolTip(ItemStack stack, int x, int y) {
         super.renderToolTip(stack, x, y);
     }
 
     @Override
     public void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.MouseClicked(this, mouseX, mouseY, mouseButton));
+        if (FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.MouseClicked(this, mouseX, mouseY, mouseButton))) return;
         super.mouseClicked(mouseX, mouseY, mouseButton);
+    }
+
+    @Override
+    public void onGuiClosed() {
+        FrameworkManager.getEventBus().post(new GuiOverlapEvent.ChestOverlap.GuiClosed(this));
+        super.onGuiClosed();
     }
 
     public List<GuiButton> getButtonList() {

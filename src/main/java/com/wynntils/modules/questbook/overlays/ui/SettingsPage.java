@@ -6,7 +6,6 @@ package com.wynntils.modules.questbook.overlays.ui;
 
 import com.wynntils.ModCore;
 import com.wynntils.core.framework.settings.ui.SettingsUI;
-import com.wynntils.core.framework.ui.UI;
 import com.wynntils.modules.questbook.instances.IconContainer;
 import com.wynntils.modules.questbook.instances.QuestBookPage;
 import net.minecraft.util.text.TextFormatting;
@@ -20,10 +19,8 @@ public class SettingsPage extends QuestBookPage {
     }
 
     @Override
-    public void open(boolean requestOpening) {
-        SettingsUI ui = new SettingsUI(ModCore.mc().currentScreen);
-        UI.setupUI(ui);
-        ModCore.mc().displayGuiScreen(ui);
+    public void open(boolean showAnimation) {
+        ModCore.mc().displayGuiScreen(SettingsUI.getInstance(ModCore.mc().currentScreen));
     }
 
     @Override

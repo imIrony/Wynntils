@@ -12,13 +12,16 @@ import com.wynntils.core.framework.enums.FilterType;
 import com.wynntils.core.framework.instances.PlayerInfo;
 import com.wynntils.core.utils.ServerUtils;
 import com.wynntils.core.utils.objects.Pair;
-import com.wynntils.modules.core.instances.FakeInventory;
+import com.wynntils.modules.core.enums.InventoryResult;
+import com.wynntils.modules.core.instances.inventory.FakeInventory;
+import com.wynntils.modules.core.instances.inventory.InventoryOpenByItem;
 import com.wynntils.modules.richpresence.RichPresenceModule;
 import com.wynntils.modules.richpresence.discordgamesdk.IDiscordActivityEvents;
 import com.wynntils.modules.richpresence.profiles.SecretContainer;
 import com.wynntils.webapi.WebManager;
 import com.wynntils.webapi.profiles.player.PlayerStatsProfile.PlayerTag;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.inventory.ClickType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.ChatType;
@@ -57,12 +60,13 @@ public class RPCJoinHandler implements IDiscordActivityEvents.on_activity_join_c
         Minecraft mc = Minecraft.getMinecraft();
 
         if (!Reference.onServer) {
-            ServerUtils.connect(ServerUtils.getWynncraftServerData(true));
+            ServerData serverData = ServerUtils.getWynncraftServerData(true);
+            ServerUtils.connect(serverData);
             waitingLobby = true;
             return;
         }
         if (Reference.onWorld) {
-            if (Reference.getUserWorld().replace("WC", "").replace("HB", "").replace("EU", "").equals(Integer.toString(lastSecret.getWorld())) && Reference.getUserWorld().replaceAll("\\d+", "").equals(lastSecret.getWorldType())) {
+            if (Reference.getUserWorld().replace("WC", "").replace("HB", "").equals(Integer.toString(lastSecret.getWorld())) && Reference.getUserWorld().replaceAll("\\d+", "").equals(lastSecret.getWorldType())) {
                 sentInvite = true;
                 mc.player.sendChatMessage("/msg " + lastSecret.getOwner() + " " + lastSecret.getRandomHash());
                 return;
@@ -89,7 +93,6 @@ public class RPCJoinHandler implements IDiscordActivityEvents.on_activity_join_c
     @SubscribeEvent
     public void onWorldJoin(WynnWorldEvent.Join e) {
         if (!waitingInvite) return;
-
         sentInvite = true;
         waitingInvite = false;
         Minecraft.getMinecraft().player.sendChatMessage("/msg " + lastSecret.getOwner() + " " + lastSecret.getRandomHash());
@@ -142,7 +145,7 @@ public class RPCJoinHandler implements IDiscordActivityEvents.on_activity_join_c
         }
     }
 
-    private static Pattern WYYNCRAFT_SERVERS_WINDOW_TITLE_PATTERN = Pattern.compile("Wynncraft Servers: Page \\d+");
+    private static Pattern WYNNCRAFT_SERVERS_WINDOW_TITLE_PATTERN = Pattern.compile("Wynncraft Servers: Page \\d+");
 
     /**
      * Search for a Wynncraft World.
@@ -154,49 +157,51 @@ public class RPCJoinHandler implements IDiscordActivityEvents.on_activity_join_c
     private static void joinWorld(String worldType, int worldNumber) {
         if (!Reference.onServer || Reference.onWorld) return;
 
-        FakeInventory serverSelector = new FakeInventory(WYYNCRAFT_SERVERS_WINDOW_TITLE_PATTERN, 0);
-        serverSelector.onReceiveItems(c -> {
+        FakeInventory serverSelector = new FakeInventory(WYNNCRAFT_SERVERS_WINDOW_TITLE_PATTERN, new InventoryOpenByItem(0));
+        serverSelector.onReceiveItems(inventory -> {
             String prefix = "";
-            if (worldType.equals("")) {
+            if (worldType.equals("WC")) {
                 // US Servers
                 prefix = "";
-            } else if (worldType.equals("EU")) {
-                prefix = "EU ";
             } else if (worldType.equals("HB")) {
                 prefix = "Beta ";
             }
 
-            boolean onCorrectCategory = c.findItem(prefix + "World ", FilterType.STARTS_WITH) != null;
+            boolean onCorrectCategory = inventory.findItem(prefix + "World ", FilterType.STARTS_WITH) != null;
             if (!onCorrectCategory) {
                 String worldCategory = "";
-                if (worldType.equals("")) {
+                if (worldType.equals("WC")) {
                     worldCategory = "US Servers";
-                } else if (worldType.equals("EU")) {
-                    worldCategory = "EU Servers";
                 } else if (worldType.equals("HB")) {
                     worldCategory = "Hero Beta";
                 }
 
-                Pair<Integer, ItemStack> categoryItem = c.findItem(worldCategory, FilterType.EQUALS_IGNORE_CASE);
+                Pair<Integer, ItemStack> categoryItem = inventory.findItem(worldCategory, FilterType.EQUALS_IGNORE_CASE);
                 if (categoryItem != null) {
-                    c.clickItem(categoryItem.a, 1, ClickType.PICKUP);
-                } else {
-                    c.close();
+                    inventory.clickItem(categoryItem.a, 1, ClickType.PICKUP);
+                    return;
                 }
+
+                inventory.close();
                 return;
             }
 
-            Pair<Integer, ItemStack> world = c.findItem(prefix + "World " + worldNumber, FilterType.EQUALS_IGNORE_CASE);
+            Pair<Integer, ItemStack> world = inventory.findItem(prefix + "World " + worldNumber, FilterType.EQUALS_IGNORE_CASE);
             if (world != null) {
-                c.clickItem(world.a, 1, ClickType.PICKUP);
-                c.close();
+                inventory.clickItem(world.a, 1, ClickType.PICKUP);
+                inventory.close();
                 return;
             }
 
-            Pair<Integer, ItemStack> nextPage = c.findItem("Next Page", FilterType.CONTAINS);
-            if (nextPage != null) serverSelector.clickItem(nextPage.a, 1, ClickType.PICKUP);
-            else c.close();
-        }).onInterrupt((c) -> {
+            Pair<Integer, ItemStack> nextPage = inventory.findItem("Next Page", FilterType.CONTAINS);
+            if (nextPage != null) {
+                serverSelector.clickItem(nextPage.a, 1, ClickType.PICKUP);
+                return;
+            }
+
+            inventory.close();
+        }).onClose((inv, result) -> {
+            if (result != InventoryResult.CLOSED_SUCCESSFULLY) return;
             joinWorld(worldType, worldNumber);
         });
 

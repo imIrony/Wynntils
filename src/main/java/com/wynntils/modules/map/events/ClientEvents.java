@@ -5,6 +5,7 @@
 package com.wynntils.modules.map.events;
 
 import com.wynntils.Reference;
+import com.wynntils.core.events.custom.GameEvent;
 import com.wynntils.core.events.custom.GuiOverlapEvent;
 import com.wynntils.core.framework.interfaces.Listener;
 import com.wynntils.core.framework.rendering.colors.CommonColors;
@@ -17,10 +18,12 @@ import com.wynntils.modules.map.managers.BeaconManager;
 import com.wynntils.modules.map.managers.LootRunManager;
 import com.wynntils.modules.utilities.instances.Toast;
 import com.wynntils.modules.utilities.overlays.hud.ToastOverlay;
+import com.wynntils.webapi.WebManager;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -68,21 +71,24 @@ public class ClientEvents implements Listener {
         switch (tier) {
             case "IV":
                 wp = new WaypointProfile("Loot Chest T4", lastLocation.getX(), lastLocation.getY(), lastLocation.getZ(), CommonColors.WHITE, WaypointProfile.WaypointType.LOOTCHEST_T4, -1000);
+                wp.setGroup(WaypointProfile.WaypointType.LOOTCHEST_T4);
                 break;
             case "III":
                 wp = new WaypointProfile("Loot Chest T3", lastLocation.getX(), lastLocation.getY(), lastLocation.getZ(), CommonColors.WHITE, WaypointProfile.WaypointType.LOOTCHEST_T3, -1000);
+                wp.setGroup(WaypointProfile.WaypointType.LOOTCHEST_T3);
                 break;
             case "II":
                 wp = new WaypointProfile("Loot Chest T2", lastLocation.getX(), lastLocation.getY(), lastLocation.getZ(), CommonColors.WHITE, WaypointProfile.WaypointType.LOOTCHEST_T2, -1000);
+                wp.setGroup(WaypointProfile.WaypointType.LOOTCHEST_T2);
                 break;
             case "I":
                 wp = new WaypointProfile("Loot Chest T1", lastLocation.getX(), lastLocation.getY(), lastLocation.getZ(), CommonColors.WHITE, WaypointProfile.WaypointType.LOOTCHEST_T1, -1000);
+                wp.setGroup(WaypointProfile.WaypointType.LOOTCHEST_T1);
                 break;
         }
         if (wp != null) {
             if (MapConfig.Waypoints.INSTANCE.waypoints.stream().anyMatch(c -> c.getX() == lastLocation.getX() && c.getY() == lastLocation.getY() && c.getZ() == lastLocation.getZ())) return;
 
-            wp.setGroup(WaypointProfile.WaypointType.LOOTCHEST_T4);
             MapConfig.Waypoints.INSTANCE.waypoints.add(wp);
             MapConfig.Waypoints.INSTANCE.saveSettings(MapModule.getModule());
 
@@ -97,7 +103,16 @@ public class ClientEvents implements Listener {
         EntityPlayerSP player = Minecraft.getMinecraft().player;
         if (player == null) return;
 
-        LootRunManager.recordMovement(player.posX, player.posY, player.posZ);
+        Entity lowestEntity = player.getLowestRidingEntity();
+
+        LootRunManager.recordMovement(lowestEntity.posX, lowestEntity.posY, lowestEntity.posZ);
+    }
+
+    @SubscribeEvent
+    public void sendGathering(GameEvent.ResourceGather e) {
+        if (!MapConfig.Telemetry.INSTANCE.allowGatheringSpot) return;
+
+        WebManager.getAccount().sendGatheringSpot(e.getType(), e.getMaterial(), e.getLocation());
     }
 
 }

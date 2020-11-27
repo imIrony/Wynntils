@@ -34,7 +34,7 @@ public class UIEColorWheel extends UIEClickZone {
     private static final Pattern hexChecker = Pattern.compile("#(?:[0-9A-Fa-f]{3}){1,2}");
     private static final Pattern hexAndAlphaChecker = Pattern.compile("^#((?:[0-9A-Fa-f]{3}){1,2}),\\s+(\\d*(?:\\.\\d*)?)%$");
 
-    CustomColor color = new CustomColor(1, 1, 1);
+    CustomColor color = new CustomColor(1f, 1f, 1f);
     GuiScreen backGui;
     Consumer<CustomColor> onAccept;
     boolean allowAlpha;
@@ -144,7 +144,6 @@ public class UIEColorWheel extends UIEClickZone {
         static final int circleRadius = 160/2;
 
         String colorText = null;
-        String text = "";
 
         boolean wheelSelected = false;
 
@@ -273,8 +272,6 @@ public class UIEColorWheel extends UIEClickZone {
             double h = Math.atan2(mousePosY, mousePosX) / (2*Math.PI);
             if (h < 0) h += 1;
 
-            text = h + "";
-
             toChange = CustomColor.fromHSV((float)h, (float)s, valueSlider.getSliderValue(), getAlpha());
             colorText = null;
             return true;
@@ -302,10 +299,10 @@ public class UIEColorWheel extends UIEClickZone {
 
         @Override
         public void handleMouseInput() throws IOException {
-            int mDwehll = Mouse.getEventDWheel() * CoreDBConfig.INSTANCE.scrollDirection.getScrollDirection();
-            if (mDwehll > 0) {
+            int mDWheel = Mouse.getEventDWheel() * CoreDBConfig.INSTANCE.scrollDirection.getScrollDirection();
+            if (mDWheel > 0) {
                 valueSlider.setSliderValue(Math.min(valueSlider.getSliderValue() + 0.1f, 1), true);
-            } else if (mDwehll < 0) {
+            } else if (mDWheel < 0) {
                 valueSlider.setSliderValue(Math.max(valueSlider.getSliderValue() - 0.1f, 0), true);
             }
 

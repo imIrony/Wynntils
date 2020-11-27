@@ -19,16 +19,17 @@ import org.lwjgl.input.Mouse;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class PathWaypointOverwiewUI extends GuiScreen {
     private GuiButton nextPageBtn;
     private GuiButton previousPageBtn;
     private GuiButton exitBtn;
     private GuiButton newBtn;
-    private ArrayList<GuiButton> editButtons = new ArrayList<>();
+    private List<GuiButton> editButtons = new ArrayList<>();
 
     private ScreenRenderer renderer = new ScreenRenderer();
-    private ArrayList<PathWaypointProfile> paths;
+    private List<PathWaypointProfile> paths;
     private int page;
     private int pageHeight;
 
@@ -121,12 +122,12 @@ public class PathWaypointOverwiewUI extends GuiScreen {
     @Override
     public void handleMouseInput() throws IOException {
         super.handleMouseInput();
-        int mDwehll = Mouse.getEventDWheel() * CoreDBConfig.INSTANCE.scrollDirection.getScrollDirection();
-        if (mDwehll < 0 && nextPageBtn.enabled) {
+        int mDWheel = Mouse.getEventDWheel() * CoreDBConfig.INSTANCE.scrollDirection.getScrollDirection();
+        if (mDWheel < 0 && nextPageBtn.enabled) {
             ++page;
             checkAvailablePages();
             setEditButtons();
-        } else if (mDwehll > 0 && previousPageBtn.enabled) {
+        } else if (mDWheel > 0 && previousPageBtn.enabled) {
             --page;
             checkAvailablePages();
             setEditButtons();

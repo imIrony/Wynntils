@@ -93,9 +93,10 @@ public class BeaconManager {
             }
             tessellator.draw();
 
-            // reseting
+            // resetting
             color(1f, 1f, 1f, 1f);
             disableBlend();
+            enableCull();
         }
         popAttrib();
     }

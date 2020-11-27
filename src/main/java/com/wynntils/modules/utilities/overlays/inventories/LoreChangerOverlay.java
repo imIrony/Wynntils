@@ -1,4 +1,4 @@
-/**
+/*
  *  * Copyright © Wynntils - 2018 - 2020.
  */
 
@@ -25,7 +25,7 @@ import java.util.List;
 public class LoreChangerOverlay implements Listener {
 
     @SubscribeEvent
-    public void onChest(GuiOverlapEvent.ChestOverlap.DrawScreen e) {
+    public void onChest(GuiOverlapEvent.ChestOverlap.DrawScreen.Post e) {
         if (e.getGui().getSlotUnderMouse() == null || !e.getGui().getSlotUnderMouse().getHasStack()) return;
 
         replaceLore(e.getGui().getSlotUnderMouse().getStack());
@@ -44,7 +44,7 @@ public class LoreChangerOverlay implements Listener {
 
         replaceLore(e.getGui().getSlotUnderMouse().getStack());
     }
-    
+
     private static void replaceLore(ItemStack stack) {
         // Soul Point Timer
         if ((stack.getItem() == Items.NETHER_STAR || stack.getItem() == Item.getItemFromBlock(Blocks.SNOW_LAYER)) && stack.getDisplayName().contains("Soul Point")) {
@@ -59,13 +59,7 @@ public class LoreChangerOverlay implements Listener {
                 int minutesUntilSoulPoint = secondsUntilSoulPoint / 60;
                 secondsUntilSoulPoint %= 60;
                 lore.add(TextFormatting.AQUA + "Time until next soul point: " + TextFormatting.WHITE + minutesUntilSoulPoint + ":" + String.format("%02d", secondsUntilSoulPoint));
-                NBTTagCompound nbt = stack.getTagCompound();
-                NBTTagCompound display = nbt.getCompoundTag("display");
-                NBTTagList tag = new NBTTagList();
-                lore.forEach(s -> tag.appendTag(new NBTTagString(s)));
-                display.setTag("Lore", tag);
-                nbt.setTag("display", display);
-                stack.setTagCompound(nbt);
+                ItemUtils.replaceLore(stack, lore);
                 return;
             }
         }
@@ -80,32 +74,47 @@ public class LoreChangerOverlay implements Listener {
                     for (int index = 0; index < loreList.tagCount(); index++) {
                         String lore = loreList.getStringTagAt(index);
                         if (StringUtils.hasWynnic(lore)) {
-                            String translated = "";
+                            StringBuilder translated = new StringBuilder();
                             boolean colorCode = false;
+                            StringBuilder number = new StringBuilder();
                             for (char character : lore.toCharArray()) {
-                                String translatedCharacter;
-                                if (StringUtils.isWynnic(character)) {
-                                    translatedCharacter = StringUtils.translateCharacterFromWynnic(character);
-                                    if (capital && translatedCharacter.matches("[a-z]")) {
-                                        translatedCharacter = String.valueOf(Character.toUpperCase(translatedCharacter.charAt(0)));
-                                    }
+                                if (StringUtils.isWynnicNumber(character)) {
+                                    number.append(character);
                                 } else {
-                                    translatedCharacter = String.valueOf(character);
-                                }
+                                    if (!number.toString().isEmpty()) {
+                                        translated.append(StringUtils.translateNumberFromWynnic(number.toString()));
+                                        number = new StringBuilder();
+                                    }
 
-                                translated += translatedCharacter;
+                                    String translatedCharacter;
+                                    if (StringUtils.isWynnic(character)) {
+                                        translatedCharacter = StringUtils.translateCharacterFromWynnic(character);
+                                        if (capital && translatedCharacter.matches("[a-z]")) {
+                                            translatedCharacter = String.valueOf(Character.toUpperCase(translatedCharacter.charAt(0)));
+                                        }
+                                    } else {
+                                        translatedCharacter = String.valueOf(character);
+                                    }
 
-                                if (".?!".contains(translatedCharacter)) {
-                                    capital = true;
-                                } else if (translatedCharacter.equals("§")) {
-                                    colorCode = true;
-                                } else if (!translatedCharacter.equals(" ") && !colorCode) {
-                                    capital = false;
-                                } else if (colorCode) {
-                                    colorCode = false;
+                                    translated.append(translatedCharacter);
+
+                                    if (".?!".contains(translatedCharacter)) {
+                                        capital = true;
+                                    } else if (translatedCharacter.equals("§")) {
+                                        colorCode = true;
+                                    } else if (!translatedCharacter.equals(" ") && !colorCode) {
+                                        capital = false;
+                                    } else if (colorCode) {
+                                        colorCode = false;
+                                    }
                                 }
                             }
-                            loreList.set(index, new NBTTagString(translated));
+                            if (!number.toString().isEmpty()) {
+                                translated.append(StringUtils.translateNumberFromWynnic(number.toString()));
+                                number = new StringBuilder();
+                            }
+
+                            loreList.set(index, new NBTTagString(translated.toString()));
                         }
                     }
                 }

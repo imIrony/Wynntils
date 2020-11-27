@@ -8,12 +8,11 @@ import com.wynntils.Reference;
 import com.wynntils.core.events.custom.GuiOverlapEvent;
 import com.wynntils.core.framework.interfaces.Listener;
 import com.wynntils.core.framework.settings.ui.SettingsUI;
-import com.wynntils.core.utils.ServerUtils;
 import com.wynntils.modules.core.overlays.inventories.IngameMenuReplacer;
+import com.wynntils.modules.questbook.enums.QuestBookPages;
 import com.wynntils.modules.utilities.configs.UtilitiesConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -21,22 +20,56 @@ import java.util.List;
 
 public class MenuButtonsOverlay implements Listener {
 
-    private static final String[] ips = {
-        Reference.ServerIPS.us,
-        Reference.ServerIPS.eu
-    };
-
     @SubscribeEvent
     public void initGui(GuiOverlapEvent.IngameMenuOverlap.InitGui e) {
         if (!Reference.onServer) return;
-        if (Reference.onWorld) {
-            if (UtilitiesConfig.INSTANCE.addClassServer) {
-                initClassServerGui(e.getButtonList(), e.getGui());
-            }
-            return;
+
+        int numButtonRows = 0;
+        if (Reference.onWorld && UtilitiesConfig.INSTANCE.addClassHubButtons) {
+            numButtonRows++;
         }
-        if (UtilitiesConfig.INSTANCE.addChangeHub) {
-            initChangeServer(e.getButtonList(), e.getGui());
+        if (UtilitiesConfig.INSTANCE.addOptionsProfileButtons) {
+            numButtonRows++;
+        }
+        if (numButtonRows == 0) return;
+
+        List<GuiButton> buttonList = e.getButtonList();
+        IngameMenuReplacer gui = e.getGui();
+        removeDefaultButtons(buttonList);
+
+        int yOffset;
+        if (numButtonRows == 2) {
+            yOffset = 48;
+        } else {
+            yOffset = 72;
+            moveTopButtonDown(buttonList, gui);
+        }
+
+        if (Reference.onWorld && UtilitiesConfig.INSTANCE.addClassHubButtons) {
+            addButtonPair(buttonList, gui, yOffset, 753, "Class selection",
+                    754, "Back to Hub");
+            yOffset = 72;
+        }
+
+        if (UtilitiesConfig.INSTANCE.addOptionsProfileButtons) {
+            addButtonPair(buttonList, gui, yOffset, 755, "Wynntils Options",
+                    756, "User Profile");
+        }
+    }
+
+    private static void addButtonPair(List<GuiButton> buttonList, IngameMenuReplacer gui, int yOffset, int buttonId1, String buttonText1, int buttonId2, String buttonText2) {
+        buttonList.add(new GuiButton(buttonId1, gui.width / 2 - 100, gui.height / 4 + yOffset + -16, 98, 20, buttonText1));
+        buttonList.add(new GuiButton(buttonId2, gui.width / 2 + 2, gui.height / 4 + yOffset + -16, 98, 20, buttonText2));
+    }
+
+    /**
+     * Move the top "Back to Game" button down to avoid a gap
+     */
+    private static void moveTopButtonDown(List<GuiButton> buttonList, IngameMenuReplacer gui) {
+        for (GuiButton button : buttonList) {
+            if (button.id == 4) {
+                button.y = gui.height / 4 + 48 - 16;
+            }
         }
     }
 
@@ -56,51 +89,10 @@ public class MenuButtonsOverlay implements Listener {
         });
     }
 
-    private void initClassServerGui(List<GuiButton> buttonList, IngameMenuReplacer gui) {
-        removeDefaultButtons(buttonList);
-
-        buttonList.add(new GuiButton(753, gui.width / 2 - 100, gui.height / 4 + 48 + -16, "Class selection"));
-        buttonList.add(new GuiButton(754, gui.width / 2 - 100, gui.height / 4 + 72 + -16, "Back to Hub"));
-    }
-
-    private void initChangeServer(List<GuiButton> buttonList, IngameMenuReplacer gui) {
-        removeDefaultButtons(buttonList);
-
-        GuiButton[] changeButtons = new GuiButton[ips.length];
-        buttonList.add(new GuiButton(755, gui.width / 2 - 100, gui.height / 4 + 48 - 16, "Wynntils Options"));
-        buttonList.add(changeButtons[0] = new GuiButton(760, gui.width / 2 - 100, gui.height / 4 + 72 - 16, 98, 20, "Switch to US hub"));
-        buttonList.add(changeButtons[1] = new GuiButton(761, gui.width / 2 + 2, gui.height / 4 + 72 - 16, 98, 20, "Switch to EU hub"));
-
-        ServerData currentServerData = Minecraft.getMinecraft().getCurrentServerData();
-        String currentIp = currentServerData == null ? null : currentServerData.serverIP;
-        for (int i = 0; i < ips.length; ++i) {
-            if (ips[i].equals(currentIp)) {
-                changeButtons[i].enabled = false;
-            }
-        }
-    }
-
     @SubscribeEvent
     public void actionPerformed(GuiOverlapEvent.IngameMenuOverlap.ActionPerformed e) {
         int id = e.getButton().id;
-        if (0 <= id - 760 && id - 760 < ips.length) {
-            // Disable disconnect and other change hub buttons to
-            // prevent spamming them
-            e.getButtonList().forEach(b -> {
-                int bid = b.id;
-                if (bid == 1 || (0 <= bid - 760 && bid - 760 < ips.length)) b.enabled = false;
-            });
-            ServerUtils.connect(ServerUtils.changeServerIP(Minecraft.getMinecraft().getCurrentServerData(), ips[id - 760], "Wynncraft"), false);
-            return;
-        }
         switch (id) {
-            case 1:
-                // Disconnect button; Disable change hub buttons
-                e.getButtonList().forEach(b -> {
-                    int bid = b.id;
-                    if (0 <= bid - 760 && bid - 760 < ips.length) b.enabled = false;
-                });
-                return;  // Don't cancel
             case 753:
                 Minecraft.getMinecraft().player.sendChatMessage("/class");
                 break;
@@ -108,7 +100,10 @@ public class MenuButtonsOverlay implements Listener {
                 Minecraft.getMinecraft().player.sendChatMessage("/hub");
                 break;
             case 755:
-                new SettingsUI(Minecraft.getMinecraft().currentScreen).show();
+                Minecraft.getMinecraft().displayGuiScreen(SettingsUI.getInstance(Minecraft.getMinecraft().currentScreen));
+                break;
+            case 756:
+                QuestBookPages.MAIN.getPage().open(true);
                 break;
             default:
                 return;

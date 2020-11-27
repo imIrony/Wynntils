@@ -24,6 +24,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.client.config.GuiUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.lwjgl.input.Keyboard;
@@ -34,34 +35,42 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 public class SettingsUI extends UI {
+    private static final SettingsUI INSTANCE = new SettingsUI();
+    static {
+        UI.setupUI(INSTANCE);
+    }
+
     private GuiScreen parentScreen;
 
     private String currentSettingsPath = "";
     private Map<String, SettingsContainer> registeredSettings = new HashMap<>();
     private List<String> sortedSettings = new ArrayList<>();
-    private HashSet<String> changedSettings = new HashSet<>();
+    private Set<String> changedSettings = new HashSet<>();
     private List<String> searchText = Collections.emptyList();
 
     public UIEList holders = new UIEList(0.5f, 0.5f, -170, -87);
     public UIEList settings = new UIEList(0.5f, 0.5f, 5, -90);
 
-    public UIESlider holdersScrollbar = new UIESlider.Vertical(null, Textures.UIs.button_scrollbar, 0.5f, 0.5f, -178, -88, 161, false, -85, 1, 1f, 0, null);
-    public UIESlider settingsScrollbar = new UIESlider.Vertical(CommonColors.LIGHT_GRAY, Textures.UIs.button_scrollbar, 0.5f, 0.5f, 185, -100, 200, true, -95, -150, 1f, 0, null);
+    public UIESlider holdersScrollbar = new UIESlider.Vertical(null, Textures.UIs.button_scrollbar, 0.5f, 0.5f, -178, -88, 161, false, -85, 1, 1f, 0, null, 0, 0, 5, 27);
+    public UIESlider settingsScrollbar = new UIESlider.Vertical(CommonColors.LIGHT_GRAY, Textures.UIs.button_scrollbar, 0.5f, 0.5f, 185, -100, 200, true, -95, -150, 1f, 0, null, 0, 0, 5, 27);
 
     public UIEButton cancelButton = new UIEButton("Cancel", Textures.UIs.button_a, 0.5f, 0.5f, -180, 85, -10, true, (ui, mouseButton) -> {
         changedSettings.forEach(c -> { try { registeredSettings.get(c).tryToLoad(); } catch (Exception e) { e.printStackTrace(); } });
         onClose();
-    });
+    }, 0, 0, 17, 45);
     public UIEButton applyButton = new UIEButton("Apply", Textures.UIs.button_a, 0.5f, 0.5f, -130, 85, -10, true, (ui, mouseButton) -> {
         changedSettings.forEach(c -> { try { registeredSettings.get(c).saveSettings(); } catch (Exception e) { e.printStackTrace(); } });
         onClose();
-    });
+    }, 0, 0, 17, 45);
     public UIETextBox searchField = new UIETextBox(0.5f, 0.5f, -90, 82, 85, true, "Search...", true, (ui, oldText) -> {
         updateSearchText();
     });
 
-    public SettingsUI(GuiScreen parentScreen) {
-        this.parentScreen = parentScreen;
+    private SettingsUI() { }
+
+    public static SettingsUI getInstance(GuiScreen parentScreen) {
+        INSTANCE.parentScreen = parentScreen;
+        return INSTANCE;
     }
 
     @Override
@@ -119,7 +128,7 @@ public class SettingsUI extends UI {
         if (settingsScrollbar.active) {
             float i = Mouse.getEventDWheel() * CoreDBConfig.INSTANCE.scrollDirection.getScrollDirection();
             if (i != 0) {
-                i = MathHelper.clamp(i, -1, 1) * settingsScrollbar.precision * 8;
+                i = MathHelper.clamp(i, -1, 1) * settingsScrollbar.precision * 16;
 
                 if (mouseX >= screenWidth / 2 + 5 && mouseX < screenWidth / 2 + 185 && mouseY >= screenHeight / 2 - 100 && mouseY < screenHeight / 2 + 100) {
                     settingsScrollbar.setValue(settingsScrollbar.getValue() + i);
@@ -130,7 +139,7 @@ public class SettingsUI extends UI {
             float i = Mouse.getEventDWheel() * CoreDBConfig.INSTANCE.scrollDirection.getScrollDirection();
             if (i != 0) {
                 if (mouseX <= screenWidth / 2 - 5 && mouseX > screenWidth / 2 - 185 && mouseY >= screenHeight / 2 - 100 && mouseY < screenHeight / 2 + 100) {
-                    i = MathHelper.clamp(i, -1, 1) * holdersScrollbar.precision * 8;
+                    i = MathHelper.clamp(i, -1, 1) * holdersScrollbar.precision * 16;
                     holdersScrollbar.setValue(holdersScrollbar.getValue() + i);
                 }
             }
@@ -174,20 +183,20 @@ public class SettingsUI extends UI {
                     settingElement.render(mouseX, mouseY);
                 });
                 if (setting != settings.elements.get(0))
-                    render.drawRect(CommonColors.LIGHT_GRAY, setting.position.getDrawingX(), setting.position.getDrawingY() - 1, setting.position.getDrawingX() + 175, setting.position.getDrawingY());
+                    render.drawRect(CommonColors.LIGHT_GRAY, setting.position.getDrawingX(), setting.position.getDrawingY() - 4, setting.position.getDrawingX() + 175, setting.position.getDrawingY() -3);
                 ScreenRenderer.scale(0.8f);
                 String name = setting.field.info.displayName();
                 render.drawString(
                     name,
-                    (setting.position.getDrawingX() + 34f) / 0.8f, (setting.position.getDrawingY() + 4.5f) / 0.8f,
+                    (setting.position.getDrawingX() + 43f) / 0.8f, (setting.position.getDrawingY() + 4.5f) / 0.8f,
                     !searchText.isEmpty() && !setting.isSearched ? CommonColors.GRAY : CommonColors.BLACK,
                     SmartFontRenderer.TextAlignment.LEFT_RIGHT, SmartFontRenderer.TextShadow.NONE
                 );
                 ScreenRenderer.resetScale();
                 if (setting.isSearched) {
                     int y = (int) (setting.position.getDrawingY() + 4.5f + fontRenderer.FONT_HEIGHT * 0.8f);
-                    int x = setting.position.getDrawingX() + 34;
-                    render.drawRect(CommonColors.BLACK, x, y, x + (int) (fontRenderer.getStringWidth(name) * 0.8f) + 1, y + 1);
+                    int x = setting.position.getDrawingX() + 43;
+                    render.drawRect(CommonColors.BLACK, x, y, x + (int) (ScreenRenderer.fontRenderer.getStringWidth(name) * 0.8f) + 1, y + 1);
                 }
             }
             setting.position.offsetX -= settings.position.offsetX;
@@ -199,14 +208,14 @@ public class SettingsUI extends UI {
     @Override
     public void onRenderPostUIE(ScreenRenderer render) {
         ScreenRenderer.scale(0.7f);
-        String path = this.currentSettingsPath.replace('/', '>');
-        render.drawString(path, (screenWidth/2f+10)/0.7f, (screenHeight/2f-106)/0.7f, CommonColors.BLACK, SmartFontRenderer.TextAlignment.LEFT_RIGHT, SmartFontRenderer.TextShadow.NONE);
+        String path = this.currentSettingsPath.replace("/", " > ");
+        render.drawString(path, (screenWidth/2f+10)/0.7f, (screenHeight/2f-103)/0.7f, CommonColors.BLACK, SmartFontRenderer.TextAlignment.LEFT_RIGHT, SmartFontRenderer.TextShadow.NONE);
         if (Reference.developmentEnvironment) {
             SettingsContainer scn = registeredSettings.get(currentSettingsPath);
             if (scn != null) {
                 String saveFile = scn.getSaveFile();
                 if (saveFile != null) {
-                    render.drawString(saveFile, (screenWidth/2f-10)/0.7f, (screenHeight/2f-106)/0.7f, CommonColors.BLACK, SmartFontRenderer.TextAlignment.RIGHT_LEFT, SmartFontRenderer.TextShadow.NONE);
+                    render.drawString(saveFile, (screenWidth/2f-10)/0.7f, (screenHeight/2f-103)/0.7f, CommonColors.BLACK, SmartFontRenderer.TextAlignment.RIGHT_LEFT, SmartFontRenderer.TextShadow.NONE);
                 }
             }
         }
@@ -264,12 +273,8 @@ public class SettingsUI extends UI {
         for (String word : words) {
             if (!word.isEmpty()) searchText.add(word);
         }
-        settings.elements.forEach(s -> {
-            ((SettingElement) s).isSearched = doesMatchSearch((SettingElement) s);
-        });
-        holders.elements.forEach(h -> {
-            ((HolderButton) h).isSearched = doesMatchSearch((HolderButton) h);
-        });
+        settings.elements.forEach(s -> ((SettingElement) s).isSearched = doesMatchSearch((SettingElement) s));
+        holders.elements.forEach(h -> ((HolderButton) h).isSearched = doesMatchSearch((HolderButton) h));
     }
 
     private boolean doesStringMatchSearch(String s) {
@@ -320,7 +325,7 @@ public class SettingsUI extends UI {
         int textWidth;
 
         public HolderButton(String path) {
-            super("", null, 0f, 0f, 0, 0, -1, true, null);
+            super("", null, 0f, 0f, 0, 0, -1, true, null, 0, 0, 0, 0);
             String[] paths = path.split("/");
             this.height = 9;
             this.path = path;
@@ -370,7 +375,7 @@ public class SettingsUI extends UI {
 
             this.position.offsetY = settingHeight * settings.elements.size();
 
-            add(new UIEButton("reset", Textures.UIs.button_a, 0f, 0f, 0, 0, -5, true, (ui, mouseButton) -> {
+            add(new UIEButton(" reset ", Textures.UIs.button_a, 0f, 0f, 0, 0, -5, true, (ui, mouseButton) -> {
                 try {
                     registeredSettings.get(currentSettingsPath).resetValue(field);
                     changedSettings.add(currentSettingsPath);
@@ -378,7 +383,7 @@ public class SettingsUI extends UI {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-            }));
+            }, 0, 0, 17, 45));
 
             updateValue();
         }
@@ -408,14 +413,14 @@ public class SettingsUI extends UI {
                     // Set text again in case it was over default max length of 32
                     ((UIETextBox) valueElement).setText(text);
                 } else if (type.isAssignableFrom(boolean.class)) {
-                    valueElement = new UIEButton.Toggle("Enabled", Textures.UIs.button_b, "Disabled", Textures.UIs.button_b, (boolean) value, 0f, 0f, 0, 15, -10, true, (ui, mouseButton) -> {
+                    valueElement = new UIEButton.Toggle(TextFormatting.GREEN + "Enabled", Textures.UIs.button_b, TextFormatting.RED + "Disabled", Textures.UIs.button_b, (boolean) value, 0f, 0f, 0, 15, -10, true, (ui, mouseButton) -> {
                         try {
                             registeredSettings.get(currentSettingsPath).setValueWithoutSaving(field.field, ((UIEButton.Toggle) valueElement).value);
                             changedSettings.add(currentSettingsPath);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                    });
+                    }, 0, 0, 17, 60);
                 } else if (value instanceof Enum) {
                     valueElement = new UIEButton.Enum(s -> s, Textures.UIs.button_b, (Class<? extends Enum>) type, (Enum) value, 0f, 0f, 0, 15, -10, true, (ui, mouseButton) -> {
                         try {
@@ -424,7 +429,7 @@ public class SettingsUI extends UI {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                    });
+                    }, 0, 0, 17, 60);
                 } else if (type.isAssignableFrom(int.class)) {
                     Setting.Limitations.IntLimit limit = field.field.getAnnotation(Setting.Limitations.IntLimit.class);
                     if (limit != null) {
@@ -435,7 +440,7 @@ public class SettingsUI extends UI {
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
-                        });
+                        }, 0, 0, 17, 45);
                         ((UIESlider)valueElement).setValue((int)value);
                         ((UIESlider)valueElement).decimalFormat = new DecimalFormat("#");
                     }
@@ -449,7 +454,7 @@ public class SettingsUI extends UI {
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
-                        });
+                        }, 0, 0, 17, 45);
                         ((UIESlider)valueElement).setValue((float)value);
                         ((UIESlider)valueElement).decimalFormat = new DecimalFormat("#.#");
                     }
@@ -463,7 +468,7 @@ public class SettingsUI extends UI {
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
-                        });
+                        }, 0, 0, 17, 45);
                         ((UIESlider)valueElement).setValue((float)(double) value);
                         ((UIESlider)valueElement).decimalFormat = new DecimalFormat("#.#");
                     }

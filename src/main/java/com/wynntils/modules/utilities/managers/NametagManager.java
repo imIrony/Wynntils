@@ -5,16 +5,23 @@
 package com.wynntils.modules.utilities.managers;
 
 import com.wynntils.Reference;
+import com.wynntils.core.framework.enums.professions.ProfessionType;
 import com.wynntils.core.framework.instances.PlayerInfo;
 import com.wynntils.core.framework.rendering.ScreenRenderer;
 import com.wynntils.core.framework.rendering.SmartFontRenderer;
 import com.wynntils.core.framework.rendering.colors.CommonColors;
 import com.wynntils.core.framework.rendering.colors.CustomColor;
 import com.wynntils.core.framework.rendering.colors.MinecraftChatColors;
+import com.wynntils.core.framework.rendering.textures.AssetsTexture;
+import com.wynntils.core.framework.rendering.textures.Textures;
+import com.wynntils.core.utils.ItemUtils;
 import com.wynntils.core.utils.Utils;
+import com.wynntils.modules.core.enums.AccountType;
+import com.wynntils.modules.core.managers.UserManager;
 import com.wynntils.modules.utilities.configs.UtilitiesConfig;
 import com.wynntils.modules.utilities.instances.NametagLabel;
 import com.wynntils.webapi.WebManager;
+import com.wynntils.webapi.profiles.LeaderboardProfile;
 import com.wynntils.webapi.profiles.item.ItemProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -26,6 +33,7 @@ import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Team;
@@ -36,6 +44,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import static net.minecraft.client.renderer.GlStateManager.*;
@@ -52,7 +61,7 @@ public class NametagManager {
     private static final NametagLabel helperLabel = new NametagLabel(CommonColors.LIGHT_GREEN, "Wynntils Helper", 0.7f);
     private static final NametagLabel contentTeamLabel = new NametagLabel(CommonColors.RAINBOW, "Wynntils Content Team", 0.7f);
     private static final NametagLabel donatorLabel = new NametagLabel(CommonColors.RAINBOW, "Wynntils Donator", 0.7f);
-    private static final HashMap<String, NametagLabel> wynncraftTagLabels = new HashMap<>();
+    private static final Map<String, NametagLabel> wynncraftTagLabels = new HashMap<>();
 
     public static final Pattern MOB_LEVEL = Pattern.compile("(" + TextFormatting.GOLD + " \\[Lv\\. (.*?)\\])");
     private static final ScreenRenderer renderer = new ScreenRenderer();
@@ -78,10 +87,10 @@ public class NametagManager {
                 if (entity.getTeam().getName().matches("pvp_.*")) customLabels.add(huntedLabel);  // hunted mode
             }
 
-            if (WebManager.isModerator(entity.getUniqueID())) customLabels.add(developerLabel);  // developer
-            if (WebManager.isHelper(entity.getUniqueID())) customLabels.add(helperLabel);  // helper
-            if (WebManager.isContentTeam(entity.getUniqueID())) customLabels.add(contentTeamLabel);  // contentTeam
-            if (WebManager.isDonator(entity.getUniqueID())) customLabels.add(donatorLabel);  // donator
+            if (UserManager.isAccountType(entity.getUniqueID(), AccountType.MODERATOR)) customLabels.add(developerLabel);  // developer
+            if (UserManager.isAccountType(entity.getUniqueID(), AccountType.HELPER)) customLabels.add(helperLabel);  // helper
+            if (UserManager.isAccountType(entity.getUniqueID(), AccountType.CONTENT_TEAM)) customLabels.add(contentTeamLabel);  // contentTeam
+            if (UserManager.isAccountType(entity.getUniqueID(), AccountType.DONATOR)) customLabels.add(donatorLabel);  // donator
             if (Reference.onWars && UtilitiesConfig.Wars.INSTANCE.warrerHealthBar) customLabels.add(new NametagLabel(null, Utils.getPlayerHPBar((EntityPlayer)entity), 0.7f));  // war health
             if (UtilitiesConfig.INSTANCE.showArmors) customLabels.addAll(getUserArmorLabels((EntityPlayer)entity));  // armors
         } else if (!UtilitiesConfig.INSTANCE.hideNametags && !UtilitiesConfig.INSTANCE.hideNametagBox) return false;
@@ -142,16 +151,74 @@ public class NametagManager {
         int offsetY = +10;
 
         float lastScale = 0;
-        // player labels
-        if (!labels.isEmpty() && entity instanceof EntityPlayer) {
-            for (NametagLabel label : labels) {
-                offsetY-=10 * label.scale;
-                drawNametag(label.text, label.color, (float)x, (float) y + position, (float) z, offsetY, playerViewY, playerViewX, thirdPerson, isSneaking, label.scale);
+        // player labels & badges
+        if (entity instanceof EntityPlayer) {
+            if (!labels.isEmpty()) {
+                for (NametagLabel label : labels) {
+                    offsetY -= 10 * label.scale;
+                    drawNametag(label.text, label.color, (float) x, (float) y + position, (float) z, offsetY, playerViewY, playerViewX, thirdPerson, isSneaking, label.scale);
+                }
+            }
+
+            LeaderboardProfile leader = LeaderboardManager.getLeader(entity.getUniqueID());
+            if (UtilitiesConfig.INSTANCE.renderLeaderboardBadges && leader != null) {
+                double horizontalShift = -(((leader.rankSize() - 1) * 21f) / 2);
+
+                // TODO limit max badges to 3 and switch between them by time
+                for (Map.Entry<ProfessionType, Integer> badge : leader.getRanks()) {
+                    if (badge.getValue() == 10) continue;
+
+                    drawBadge(badge.getKey(), ((badge.getValue()-1) / 3),
+                            (float)x, (float)y + position, (float)z, horizontalShift, offsetY - 25, playerViewY, playerViewX, thirdPerson, isSneaking);
+
+                    horizontalShift += 21f;
+                }
             }
         }
 
         // default label
-        drawNametag(entityName, null, (float) x, (float) y + position, (float) z, offsetY-10, playerViewY, playerViewX, thirdPerson, isSneaking, 1);
+        drawNametag(entityName, null, (float) x, (float) y + position, (float) z, offsetY - 10, playerViewY, playerViewX, thirdPerson, isSneaking, 1);
+    }
+
+    private static void drawBadge(ProfessionType profession, int tier, float x, float y, float z, double horizontalShift, int verticalShift, float viewerYaw, float viewerPitch, boolean isThirdPersonFrontal, boolean isSneaking) {
+        pushMatrix();
+        {
+            ScreenRenderer.beginGL(0, 0);
+            {
+                translate(x, y, z);
+                glNormal3f(0f, 1f, 0f);
+                rotate(-viewerYaw, 0f, 1f, 0f);
+                rotate((float) (isThirdPersonFrontal ? -1 : 1) * viewerPitch, 1.0F, 0.0F, 0.0F);
+                scale(-0.025F, -0.025F, 0.025F);
+                disableLighting();
+                depthMask(true);
+                color(1.0f, 1.0f, 1.0f, 1.0f);
+
+                AssetsTexture texture = Textures.World.leaderboard_badges;
+                float texMinX = (profession.ordinal() * 19) / texture.width;
+                float texMinY = (tier * 17) / texture.height;
+                float texMaxX = ((profession.ordinal() + 1) * 19) / texture.width;
+                float texMaxY = ((tier + 1) * 17) / texture.height;
+
+                // draws the box
+                texture.bind();
+                Tessellator tesselator = Tessellator.getInstance();
+                BufferBuilder vertexBuffer = tesselator.getBuffer();
+                {
+                    vertexBuffer.begin(7, DefaultVertexFormats.POSITION_TEX);
+                    vertexBuffer.pos(-9.5 - horizontalShift, -8.5 + verticalShift, 0).tex(texMinX, texMinY).endVertex();
+                    vertexBuffer.pos(-9.5 - horizontalShift, +8.5 + verticalShift, 0).tex(texMinX, texMaxY).endVertex();
+                    vertexBuffer.pos(+9.5 - horizontalShift, +8.5 + verticalShift, 0).tex(texMaxX, texMaxY).endVertex();
+                    vertexBuffer.pos(+9.5 - horizontalShift, -8.5 + verticalShift, 0).tex(texMaxX, texMinY).endVertex();
+                }
+                tesselator.draw();
+
+                enableDepth();
+                enableLighting();
+                disableBlend();
+            }
+        }
+        popMatrix();
     }
 
     /**
@@ -250,22 +317,36 @@ public class NametagManager {
         if (Minecraft.getMinecraft().objectMouseOver == null || Minecraft.getMinecraft().objectMouseOver.entityHit == null || Minecraft.getMinecraft().objectMouseOver.entityHit != player) return labels;
 
         for (ItemStack is : player.getEquipmentAndArmor()) {
-            if (!is.hasDisplayName() || !WebManager.getItems().containsKey(TextFormatting.getTextWithoutFormattingCodes(is.getDisplayName()))) continue;
-
-            ItemProfile itemProfile = WebManager.getItems().get(TextFormatting.getTextWithoutFormattingCodes(is.getDisplayName()));
+            if (!is.hasDisplayName()) continue;
+            String itemName = WebManager.getTranslatedItemName(TextFormatting.getTextWithoutFormattingCodes(is.getDisplayName())).replace("֎", "");
+            
             CustomColor color;
-            switch (itemProfile.getTier()) {
-                case MYTHIC: color = MinecraftChatColors.DARK_PURPLE; break;
-                case FABLED: color = MinecraftChatColors.RED; break;
-                case LEGENDARY: color = MinecraftChatColors.AQUA; break;
-                case RARE: color = MinecraftChatColors.LIGHT_PURPLE; break;
-                case UNIQUE: color = MinecraftChatColors.YELLOW; break;
-                case SET: color = MinecraftChatColors.GREEN; break;
-                case NORMAL: color = MinecraftChatColors.WHITE; break;
-                default: color = CommonColors.RAINBOW;
-            }
+            String displayName;
+            if (WebManager.getItems().containsKey(itemName)) {
 
-            labels.add(new NametagLabel(color, TextFormatting.getTextWithoutFormattingCodes(is.getDisplayName()), 0.4f));
+                ItemProfile itemProfile = WebManager.getItems().get(itemName);
+                switch (itemProfile.getTier()) {
+                    case MYTHIC: color = MinecraftChatColors.DARK_PURPLE; break;
+                    case FABLED: color = MinecraftChatColors.RED; break;
+                    case LEGENDARY: color = MinecraftChatColors.AQUA; break;
+                    case RARE: color = MinecraftChatColors.LIGHT_PURPLE; break;
+                    case UNIQUE: color = MinecraftChatColors.YELLOW; break;
+                    case SET: color = MinecraftChatColors.GREEN; break;
+                    case NORMAL: color = MinecraftChatColors.WHITE; break;
+                    default: color = CommonColors.RAINBOW;
+                }
+    
+                // this solves an unidentified item showcase exploit
+                // boxes items are STONE_SHOVEL, 1 represents UNIQUE boxes and 6 MYTHIC boxes
+                if (is.getItem() == Items.STONE_SHOVEL && is.getItemDamage() >= 1 && is.getItemDamage() <= 6) {
+                    displayName = "Unidentified Item";
+                } else displayName = itemProfile.getDisplayName();
+            } else if (itemName.contains("Crafted")) {
+                color = MinecraftChatColors.DARK_AQUA;
+                displayName = itemName;
+            } else continue;
+
+            labels.add(new NametagLabel(color, TextFormatting.getTextWithoutFormattingCodes(displayName), 0.4f));
         }
 
         return labels;
@@ -275,6 +356,7 @@ public class NametagManager {
         if (!wynncraftTagLabels.containsKey(team.getName())) {
             wynncraftTagLabels.put(team.getName(), new NametagLabel(null, team.getPrefix().replace("[PvP]", "") + "Wynncraft " + StringUtils.capitalize(team.getName().replaceAll("(tag|pvp)_", "")), 0.7f));
         }
+
         return wynncraftTagLabels.get(team.getName());
     }
 

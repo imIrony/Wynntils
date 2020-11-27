@@ -4,10 +4,8 @@
 
 package com.wynntils.webapi;
 
-import com.google.common.collect.Iterables;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
-import com.mojang.util.UUIDTypeAdapter;
 import com.wynntils.ModCore;
 import com.wynntils.Reference;
 import com.wynntils.core.events.custom.WynnGuildWarEvent;
@@ -17,22 +15,24 @@ import com.wynntils.modules.core.overlays.UpdateOverlay;
 import com.wynntils.modules.map.MapModule;
 import com.wynntils.modules.map.overlays.objects.MapApiIcon;
 import com.wynntils.webapi.account.WynntilsAccount;
-import com.wynntils.webapi.profiles.MapMarkerProfile;
-import com.wynntils.webapi.profiles.MusicProfile;
-import com.wynntils.webapi.profiles.TerritoryProfile;
-import com.wynntils.webapi.profiles.UpdateProfile;
+import com.wynntils.webapi.profiles.*;
 import com.wynntils.webapi.profiles.guild.GuildProfile;
 import com.wynntils.webapi.profiles.item.IdentificationOrderer;
 import com.wynntils.webapi.profiles.item.ItemGuessProfile;
 import com.wynntils.webapi.profiles.item.ItemProfile;
+import com.wynntils.webapi.profiles.item.enums.ItemType;
 import com.wynntils.webapi.profiles.item.objects.IdentificationContainer;
+import com.wynntils.webapi.profiles.music.MusicLocationsProfile;
 import com.wynntils.webapi.profiles.player.PlayerStatsProfile;
+import com.wynntils.webapi.request.Request;
+import com.wynntils.webapi.request.RequestHandler;
 import net.minecraftforge.fml.common.ProgressManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -40,9 +40,10 @@ import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class WebManager {
 
@@ -56,30 +57,29 @@ public class WebManager {
 
     private static HashMap<String, ItemProfile> items = new HashMap<>();
     private static Collection<ItemProfile> directItems = new ArrayList<>();
+    private static HashMap<String, String> translatedReferences = new HashMap<>();
+    private static HashMap<String, String> internalIdentifications = new HashMap<>();
+    private static HashMap<ItemType, String[]> materialTypes = new HashMap<>();
     private static HashMap<String, ItemGuessProfile> itemGuesses = new HashMap<>();
 
     private static ArrayList<MapMarkerProfile> mapMarkers = new ArrayList<>();
-    private static ArrayList<MapMarkerProfile> refineryMapMarkers = new ArrayList<>();
+    private static ArrayList<MapLabelProfile> mapLabels = new ArrayList<>();
+    private static ArrayList<LocationProfile> npcLocations = new ArrayList<>();
 
     private static PlayerStatsProfile playerProfile;
     private static HashMap<String, GuildProfile> guilds = new HashMap<>();
     private static String currentSplash = "";
 
-    private static ArrayList<UUID> helpers = new ArrayList<>();
-    private static ArrayList<UUID> moderators = new ArrayList<>();
-    private static ArrayList<UUID> content_team = new ArrayList<>();
-    private static ArrayList<UUID> donators = new ArrayList<>();
+    private static ArrayList<DiscoveryProfile> discoveries = new ArrayList<>();
 
-    private static ArrayList<UUID> ears = new ArrayList<>();
-    private static ArrayList<UUID> elytras = new ArrayList<>();
-    private static ArrayList<UUID> capes = new ArrayList<>();
+    private static MusicLocationsProfile musicLocations = new MusicLocationsProfile();
 
     private static WynntilsAccount account = null;
 
     private static Gson gson = new Gson();
 
     private static Thread territoryUpdateThread;
-    private static WebRequestHandler handler = new WebRequestHandler();
+    private static RequestHandler handler = new RequestHandler();
 
     private static final int REQUEST_TIMEOUT_MILLIS = 16000;
 
@@ -90,18 +90,9 @@ public class WebManager {
         updateProfile = null;
         items = new HashMap<>();
         mapMarkers = new ArrayList<>();
-        refineryMapMarkers = new ArrayList<>();
         itemGuesses = new HashMap<>();
         playerProfile = null;
         guilds = new HashMap<>();
-
-        helpers = new ArrayList<>();
-        moderators = new ArrayList<>();
-        content_team = new ArrayList<>();
-
-        ears = new ArrayList<>();
-        elytras = new ArrayList<>();
-        capes = new ArrayList<>();
 
         account = null;
 
@@ -113,23 +104,27 @@ public class WebManager {
             tryReloadApiUrls(false, true);
         }
 
-
-        ProgressManager.ProgressBar progressBar = withProgress ? ProgressManager.push(apiUrls != null ? "Loading data from APIs" : "Loading data from cache", 0) : null;
+        ProgressManager.ProgressBar progressBar;
+        if (withProgress) {
+            progressBar = ProgressManager.push("Loading data from " + (apiUrls != null ? "APIs" : "cache"), 0);
+        } else {
+            progressBar = null;
+        }
 
         updateTerritories(handler);
-        updateUsersRoles(handler);
-        updateUsersModels(handler);
         updateItemList(handler);
-        updateIdentificationOrderer(handler);
-        updateMapMarkers(handler);
-        updateMapRefineries(handler);
+        updateMapLocations(handler);
         updateItemGuesses(handler);
         updatePlayerProfile(handler);
+        updateDiscoveries(handler);
+        updateMusicLocations(handler);
         updateCurrentSplash();
 
         handler.dispatchAsync();
 
-        if (withProgress) ProgressManager.pop(progressBar);
+        if (progressBar != null) {
+            ProgressManager.pop(progressBar);
+        }
 
         updateTerritoryThreadStatus(true);
     }
@@ -166,6 +161,10 @@ public class WebManager {
         return account;
     }
 
+    public static RequestHandler getHandler() {
+        return handler;
+    }
+
     public static String getCurrentSplash() {
         return currentSplash;
     }
@@ -182,12 +181,16 @@ public class WebManager {
         return mapMarkers;
     }
 
-    public static ArrayList<MapMarkerProfile> getRefineryMapMarkers() {
-        return refineryMapMarkers;
+    public static ArrayList<MapLabelProfile> getMapLabels() {
+        return mapLabels;
     }
 
-    public static Iterable<MapMarkerProfile> getApiMarkers() {
-        return Iterables.concat(mapMarkers, refineryMapMarkers);
+    public static ArrayList<LocationProfile> getNpcLocations() {
+        return npcLocations;
+    }
+
+    public static Iterable<MapMarkerProfile> getNonIgnoredApiMarkers() {
+        return mapMarkers.stream().filter(o -> !o.isIgnored()).collect(Collectors.toList());
     }
 
     public static UpdateProfile getUpdate() {
@@ -200,30 +203,24 @@ public class WebManager {
         return directItems;
     }
 
-    public static boolean isHelper(UUID uuid) {
-        return helpers.contains(uuid);
+    public static HashMap<ItemType, String[]> getMaterialTypes() {
+        return materialTypes;
     }
 
-    public static boolean isModerator(UUID uuid) {
-        return moderators.contains(uuid);
+    public static ArrayList<DiscoveryProfile> getDiscoveries() {
+        return discoveries;
     }
 
-    public static boolean isContentTeam(UUID uuid) { return content_team.contains(uuid); }
-
-    public static boolean isDonator(UUID uuid) {
-        return donators.contains(uuid);
+    public static MusicLocationsProfile getMusicLocations() {
+        return musicLocations;
     }
 
-    public static boolean hasElytra(UUID uuid) {
-        return elytras.contains(uuid);
+    public static String getTranslatedItemName(String name) {
+        return translatedReferences.getOrDefault(name, name);
     }
-
-    public static boolean hasEars(UUID uuid) {
-        return ears.contains(uuid);
-    }
-
-    public static boolean hasCape(UUID uuid) {
-        return capes.contains(uuid);
+    
+    public static String getIDFromInternal(String id) {
+        return internalIdentifications.get(id);
     }
 
     public static void updateTerritoryThreadStatus(boolean start) {
@@ -261,9 +258,10 @@ public class WebManager {
     /**
      * Request a update to territories {@link ArrayList}
      */
-    public static void updateTerritories(WebRequestHandler handler) {
-        String url = apiUrls == null ? null : apiUrls.get("Territory");
-        handler.addRequest(new WebRequestHandler.Request(url, "territory")
+    public static void updateTerritories(RequestHandler handler) {
+        if (apiUrls == null) return;
+        String url = apiUrls.get("Athena") + "/cache/get/territoryList";
+        handler.addRequest(new Request(url, "territory")
             .cacheTo(new File(API_CACHE_ROOT, "territories.json"))
             .handleJsonObject(json -> {
                 if (!json.has("territories")) return false;
@@ -293,14 +291,15 @@ public class WebManager {
      *
      * @return a {@link ArrayList} containing all guild names, or an empty list if an error occurred
      */
-    public static ArrayList<String> getGuilds()  {
+    public static List<String> getGuilds()  {
         class ResultHolder {
             private ArrayList<String> result;
         }
         ResultHolder resultHolder = new ResultHolder();
 
-        String url = apiUrls == null ? null : apiUrls.get("GuildList");
-        handler.addRequest(new WebRequestHandler.Request(url, "guild_list")
+        if (apiUrls == null) return Collections.emptyList();
+        String url = apiUrls.get("GuildList");
+        handler.addRequest(new Request(url, "guild_list")
             .cacheTo(new File(API_CACHE_ROOT, "guilds.json"))
             .handleJsonObject(json -> {
                 if (!json.has("guilds")) return false;
@@ -329,8 +328,9 @@ public class WebManager {
     public static GuildProfile getGuildProfile(String guild) throws IOException {
         if (apiUrls == null) return null;
 
-        URLConnection st = new URL(apiUrls.get("GuildInfo") + URLEncoder.encode(guild, "UTF-8")).openConnection();
+        URLConnection st = new URL(apiUrls.get("GuildInfo") + Utils.encodeUrl(guild)).openConnection();
         st.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; U; Intel Mac OSX10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2");
+        st.setRequestProperty("apikey", apiUrls.get("WynnApiKey"));
         st.setConnectTimeout(REQUEST_TIMEOUT_MILLIS);
         st.setReadTimeout(REQUEST_TIMEOUT_MILLIS);
 
@@ -344,38 +344,98 @@ public class WebManager {
     }
 
     /**
+     * Request the current leaderboard to Athena
+     *
+     * @param onReceive Consumes a hashmap containing as key the profession type and as value the Leaderboard Data
+     * @see LeaderboardProfile
+     */
+    public static void getLeaderboard(Consumer<HashMap<UUID, LeaderboardProfile>> onReceive) {
+        if (apiUrls == null) return;
+        String url = apiUrls.get("Athena") + "/cache/get/leaderboard";
+
+        handler.addAndDispatch(
+                new Request(url, "leaderboard")
+                .handleJsonObject((json) -> {
+                    HashMap<UUID, LeaderboardProfile> result = new HashMap<>();
+
+                    for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+                        result.put(UUID.fromString(entry.getKey()), gson.fromJson(entry.getValue(), LeaderboardProfile.class));
+                    }
+
+                    onReceive.accept(result);
+                    return true;
+                })
+        , true);
+    }
+
+    /**
+     * Request the server list to Athena
+     *
+     * @param onReceive Consumes a hashmap containing as key the server name and as value the ServerProfile
+     * @see ServerProfile
+     */
+    public static void getServerList(Consumer<HashMap<String, ServerProfile>> onReceive) {
+        if (apiUrls == null) return;
+        String url = apiUrls.get("Athena") + "/cache/get/serverList";
+
+        handler.addAndDispatch(
+                new Request(url, "serverList")
+                .handleJsonObject((con, json) -> {
+                    JsonObject servers = json.getAsJsonObject("servers");
+                    HashMap<String, ServerProfile> result = new HashMap<>();
+
+                    long serverTime = Long.parseLong(con.getHeaderField("timestamp"));
+                    for (Map.Entry<String, JsonElement> entry : servers.entrySet()) {
+                        ServerProfile profile = gson.fromJson(entry.getValue(), ServerProfile.class);
+                        profile.matchTime(serverTime);
+
+                        result.put(entry.getKey(), profile);
+                    }
+
+                    onReceive.accept(result);
+                    return true;
+                })
+        , true);
+    }
+
+    /**
      * Request all online players to WynnAPI
      *
      * @return a {@link HashMap} who the key is the server and the value is an array containing all players on it
      * @throws IOException thrown by URLConnection
      */
-    public static HashMap<String, ArrayList<String>> getOnlinePlayers() throws IOException {
+    public static HashMap<String, List<String>> getOnlinePlayers() throws IOException {
         if (apiUrls == null) return new HashMap<>();
 
         URLConnection st = new URL(apiUrls.get("OnlinePlayers")).openConnection();
         st.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2");
+        st.setRequestProperty("apikey", apiUrls.get("WynnApiKey"));
         st.setConnectTimeout(REQUEST_TIMEOUT_MILLIS);
         st.setReadTimeout(REQUEST_TIMEOUT_MILLIS);
 
         JsonObject main = new JsonParser().parse(IOUtils.toString(st.getInputStream(), StandardCharsets.UTF_8)).getAsJsonObject();
-        main.remove("request");
+        if (!main.has("message")) {
+            main.remove("request");
 
-        Type type = new TypeToken<LinkedHashMap<String, ArrayList<String>>>() {
-        }.getType();
+            Type type = new TypeToken<LinkedHashMap<String, ArrayList<String>>>() {}.getType();
 
-        return gson.fromJson(main, type);
+            return gson.fromJson(main, type);
+        } else {
+            return new HashMap<>();
+        }
     }
 
     /**
      * Update all Wynn items on the {@link HashMap} items
      */
-    public static void updateItemList(WebRequestHandler handler) {
-        String url = apiUrls == null ? null : apiUrls.get("NewItemList");
-        handler.addRequest(new WebRequestHandler.Request(url, "new_item_list")
-            .cacheTo(new File(API_CACHE_ROOT, "new_items.json"))
-            .cacheMD5Validator(() -> getAccount().getMD5Verification("newItemList"))
-            .handleJsonArray(j -> {
-                ItemProfile[] gItems = gson.fromJson(j, ItemProfile[].class);
+    public static void updateItemList(RequestHandler handler) {
+        if (apiUrls == null) return;
+        String url = apiUrls.get("Athena") + "/cache/get/itemList";
+        handler.addRequest(new Request(url, "itemList")
+            .cacheTo(new File(API_CACHE_ROOT, "item_list.json"))
+            .cacheMD5Validator(() -> getAccount().getMD5Verification("itemList"))
+            .handleJsonObject(j -> {
+                ItemProfile[] gItems = gson.fromJson(j.getAsJsonArray("items"), ItemProfile[].class);
 
                 HashMap<String, ItemProfile> citems = new HashMap<>();
                 for (ItemProfile prof : gItems) {
@@ -384,64 +444,48 @@ public class WebManager {
                 }
 
                 directItems = citems.values();
-
                 items = citems;
+
+                translatedReferences = gson.fromJson(j.getAsJsonObject("translatedReferences"), HashMap.class);
+                internalIdentifications = gson.fromJson(j.getAsJsonObject("internalIdentifications"), HashMap.class);
+                Type materialTypesType = new TypeToken<HashMap<ItemType, String[]>>(){}.getType();
+                materialTypes = gson.fromJson(j.getAsJsonObject("materialTypes"), materialTypesType);
+                IdentificationOrderer.INSTANCE = gson.fromJson(j.getAsJsonObject("identificationOrder"), IdentificationOrderer.class);
                 return true;
             })
         );
     }
 
     /**
-     * Update all Wynn items on the {@link HashMap} items
+     * Update all Wynn MapLocation on the {@link HashMap} mapMarkers and {@link HashMap} mapLabels
      */
-    public static void updateIdentificationOrderer(WebRequestHandler handler) {
-        String url = apiUrls == null ? null : apiUrls.get("IdentificationOrder");
-        handler.addRequest(new WebRequestHandler.Request(url, "identification_order")
-                .cacheTo(new File(API_CACHE_ROOT, "identification_order.json"))
-                .handleJsonObject(j -> {
-                    IdentificationOrderer.INSTANCE = gson.fromJson(j, IdentificationOrderer.class);
-                    return true;
-                })
-        );
-    }
-
-    /**
-     * Update all Wynn MapMarkers on the {@link HashMap} mapMarkers
-     */
-    public static void updateMapMarkers(WebRequestHandler handler) {
-        String url = apiUrls == null ? null : apiUrls.get("MapMarkers");
-        handler.addRequest(new WebRequestHandler.Request(url, "map_markers")
-            .cacheTo(new File(API_CACHE_ROOT, "map_markers.json"))
+    public static void updateMapLocations(RequestHandler handler) {
+        if (apiUrls == null) return;
+        String url = apiUrls.get("Athena") + "/cache/get/mapLocations";
+        handler.addRequest(new Request(url, "map_locations")
+            .cacheTo(new File(API_CACHE_ROOT, "map_locations.json"))
             .cacheMD5Validator(() -> getAccount().getMD5Verification("mapLocations"))
             .handleJsonObject(main -> {
-                JsonArray jsonArray = main.getAsJsonArray("locations");
-                Type type = new TypeToken<ArrayList<MapMarkerProfile>>() {
+                JsonArray locationArray = main.getAsJsonArray("locations");
+                Type locationType = new TypeToken<ArrayList<MapMarkerProfile>>() {
                 }.getType();
 
-                mapMarkers = gson.fromJson(jsonArray, type);
+                mapMarkers = gson.fromJson(locationArray, locationType);
                 mapMarkers.removeIf(m -> m.getName().equals("~~~~~~~~~") && m.getIcon().equals(""));
                 mapMarkers.forEach(MapMarkerProfile::ensureNormalized);
-                MapApiIcon.resetApiMarkers();
-                return true;
-            })
-        );
-    }
 
-    /**
-     * Update all Refineries MapMarkers on the {@link HashMap} mapMarkers
-     */
-    public static void updateMapRefineries(WebRequestHandler handler) {
-        String url = apiUrls == null ? null : apiUrls.get("RefineryLocations");
-        handler.addRequest(new WebRequestHandler.Request(url, "map_markers.refineries")
-            .cacheTo(new File(API_CACHE_ROOT, "map_refineries.json"))
-            .handleJson(j -> {
-                if (!j.isJsonArray()) return false;
-                JsonArray jsonArray = j.getAsJsonArray();
+                JsonArray labelArray = main.getAsJsonArray("labels");
+                Type labelType = new TypeToken<ArrayList<MapLabelProfile>>() {
+                }.getType();
 
-                Type type = new TypeToken<ArrayList<MapMarkerProfile>>() {}.getType();
+                mapLabels = gson.fromJson(labelArray, labelType);
 
-                refineryMapMarkers = gson.fromJson(jsonArray, type);
-                refineryMapMarkers.forEach(MapMarkerProfile::ensureNormalized);
+                JsonArray npcLocationArray = main.getAsJsonArray("npc-locations");
+                Type npcLocationType = new TypeToken<ArrayList<LocationProfile>>() {
+                }.getType();
+
+                npcLocations = gson.fromJson(npcLocationArray, npcLocationType);
+
                 MapApiIcon.resetApiMarkers();
                 return true;
             })
@@ -451,9 +495,10 @@ public class WebManager {
     /**
      * Update all Wynn ItemGuesses on the {@link HashMap} itemGuesses
      */
-    public static void updateItemGuesses(WebRequestHandler handler) {
-        String url = apiUrls == null ? null : apiUrls.get("ItemGuesses");
-        handler.addRequest(new WebRequestHandler.Request(url, "item_guesses")
+    public static void updateItemGuesses(RequestHandler handler) {
+        if (apiUrls == null) return;
+        String url = apiUrls.get("ItemGuesses");
+        handler.addRequest(new Request(url, "item_guesses")
             .cacheTo(new File(API_CACHE_ROOT, "item_guesses.json"))
             .handleJsonObject(json -> {
                 Type type = new TypeToken<HashMap<String, ItemGuessProfile>>() {
@@ -469,10 +514,12 @@ public class WebManager {
         );
     }
 
-    public static void updatePlayerProfile(WebRequestHandler handler) {
-        String url = apiUrls == null ? null : apiUrls.get("PlayerStatsv2") + ModCore.mc().getSession().getProfile().getId() + "/stats";
-        handler.addRequest(new WebRequestHandler.Request(url, "player_profile")
+    public static void updatePlayerProfile(RequestHandler handler) {
+        if (apiUrls == null) return;
+        String url = apiUrls.get("PlayerStatsv2") + ModCore.mc().getSession().getProfile().getId() + "/stats";
+        handler.addRequest(new Request(url, "player_profile")
             .cacheTo(new File(API_CACHE_ROOT, "player_stats.json"))
+            .addHeader("apikey", apiUrls.get("WynnApiKey"))
             .handleJsonObject(json -> {
                 Type type = new TypeToken<PlayerStatsProfile>() {
                 }.getType();
@@ -487,56 +534,28 @@ public class WebManager {
         );
     }
 
-    public static void updateUsersRoles(WebRequestHandler handler) {
-        String url = apiUrls == null ? null : apiUrls.get("UserAccount") + "getUsersRoles";
-        handler.addRequest(new WebRequestHandler.Request(url, "user_account.roles")
-            .cacheTo(new File(API_CACHE_ROOT, "user_roles.json"))
-            .handleJsonObject(main -> {
-                GsonBuilder builder = new GsonBuilder();
-                builder.registerTypeHierarchyAdapter(UUID.class, new UUIDTypeAdapter());
-                Gson gson = builder.create();
+    public static void updateDiscoveries(RequestHandler handler) {
+        if (apiUrls == null) return;
+        String url = apiUrls.get("Discoveries");
+        handler.addRequest(new Request(url, "discoveries")
+            .cacheTo(new File(API_CACHE_ROOT, "discoveries.json"))
+            .handleJsonArray(discoveriesJson -> {
+                Type type = new TypeToken<ArrayList<DiscoveryProfile>>() {}.getType();
 
-                Type type = new TypeToken<ArrayList<UUID>>() {
-                }.getType();
-
-                JsonArray helper = main.getAsJsonArray("helperUsers");
-                helpers = gson.fromJson(helper, type);
-
-                JsonArray moderator = main.getAsJsonArray("moderatorUsers");
-                moderators = gson.fromJson(moderator, type);
-
-                JsonArray contentTeam = main.getAsJsonArray("contentTeamUsers");
-                content_team = gson.fromJson(contentTeam, type);
-
-                JsonArray donator = main.getAsJsonArray("donatorUsers");
-                donators = gson.fromJson(donator, type);
+                discoveries = gson.fromJson(discoveriesJson, type);
                 return true;
-            })
-        );
+            }));
     }
 
-    public static void updateUsersModels(WebRequestHandler handler) {
-        String url = apiUrls == null ? null : apiUrls.get("UserAccount") + "getUserModels";
-        handler.addRequest(new WebRequestHandler.Request(url, "user_account.models")
-            .cacheTo(new File(API_CACHE_ROOT, "user_models.json"))
-            .handleJsonObject(main -> {
-                GsonBuilder builder = new GsonBuilder();
-                builder.registerTypeHierarchyAdapter(UUID.class, new UUIDTypeAdapter());
-                Gson gson = builder.create();
-
-                Type type = new TypeToken<ArrayList<UUID>>() {
-                }.getType();
-
-                JsonArray ear = main.getAsJsonArray("earsActive");
-                ears = gson.fromJson(ear, type);
-
-                JsonArray elytra = main.getAsJsonArray("elytraActive");
-                elytras = gson.fromJson(elytra, type);
-
-                JsonArray cape = main.getAsJsonArray("capeActive");
-                capes = gson.fromJson(cape, type);
-                return true;
-            })
+    public static void updateMusicLocations(RequestHandler handler) {
+        if (apiUrls == null) return;
+        String url = apiUrls.get("MusicLocations");
+        handler.addRequest(new Request(url, "musicLocations")
+                .cacheTo(new File(API_CACHE_ROOT, "musicLocations.json"))
+                .handleJsonObject(json -> {
+                    musicLocations = gson.fromJson(json, MusicLocationsProfile.class);
+                    return true;
+                })
         );
     }
 
@@ -618,6 +637,26 @@ public class WebManager {
         return result;
     }
 
+    public static boolean blockHeroBetaStable() {
+        if (apiUrls == null) return true;
+        return apiUrls.get("BlockHeroBetaStable").equalsIgnoreCase("true");
+    }
+
+    public static boolean warnHeroBetaStable() {
+        if (apiUrls == null) return true;
+        return apiUrls.get("WarnHeroBetaStable").equalsIgnoreCase("true");
+    }
+
+    public static boolean blockHeroBetaCuttingEdge() {
+        if (apiUrls == null) return true;
+        return apiUrls.get("BlockHeroBetaCuttingEdge").equalsIgnoreCase("true");
+    }
+
+    public static boolean warnHeroBetaCuttingEdge() {
+        if (apiUrls == null) return true;
+        return apiUrls.get("WarnHeroBetaCuttingEdge").equalsIgnoreCase("true");
+    }
+
     /**
      * Attempt to store an {@link InputStream} to a file on disk
      *
@@ -665,7 +704,7 @@ public class WebManager {
 
         @Override
         public void run() {
-            WebRequestHandler handler = new WebRequestHandler();
+            RequestHandler handler = new RequestHandler();
 
             try {
                 Thread.sleep(30000);
@@ -803,7 +842,7 @@ public class WebManager {
 
     private static void tryReloadApiUrls(boolean async, boolean inSetup) {
         if (apiUrls == null) {
-            handler.addRequest(new WebRequestHandler.Request("https://api.wynntils.com/webapi", "webapi")
+            handler.addRequest(new Request("https://api.wynntils.com/webapi", "webapi")
                 .cacheTo(new File(API_CACHE_ROOT, "webapi.txt"))
                 .handleWebReader(reader -> {
                     apiUrls = reader;
@@ -829,4 +868,11 @@ public class WebManager {
     public static @Nullable WebReader getApiUrls() {
         return apiUrls;
     }
+
+    public static String getApiUrl(String key) {
+        if (apiUrls == null) return null;
+
+        return apiUrls.get(key);
+    }
+
 }

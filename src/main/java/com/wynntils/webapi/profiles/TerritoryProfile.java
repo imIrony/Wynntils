@@ -43,7 +43,6 @@ public class TerritoryProfile {
 
         this.acquired = acquired;
 
-
         if (endX < startX) {
             this.startX = endX;
             this.endX = startX;
@@ -125,9 +124,9 @@ public class TerritoryProfile {
             if (territory.has("location")) {
                 JsonObject location = territory.getAsJsonObject("location");
                 startX = location.get("startX").getAsInt();
-                startZ = location.get("startY").getAsInt();
+                startZ = location.get("startZ").getAsInt();
                 endX = location.get("endX").getAsInt();
-                endZ = location.get("endY").getAsInt();
+                endZ = location.get("endZ").getAsInt();
             }
             String territoryName = territory.get("territory").getAsString();
             String friendlyName = territoryName.replace('’', '\'');
@@ -154,7 +153,7 @@ public class TerritoryProfile {
             int level = territory.get("level").getAsInt();
 
             String guildColor;
-            if (territory.get("guildColor").isJsonNull()) guildColor = null;
+            if (territory.get("guildColor").getAsString().isEmpty()) guildColor = null;
             else guildColor = territory.get("guildColor").getAsString();
 
             return new TerritoryProfile(territoryName, friendlyName, guildPrefix, guildColor, level, startX, startZ, endX, endZ, guild, attacker, acquired);

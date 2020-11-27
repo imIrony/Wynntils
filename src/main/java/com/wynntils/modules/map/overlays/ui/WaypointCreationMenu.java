@@ -223,8 +223,8 @@ public class WaypointCreationMenu extends UI {
         zCoordFieldLabel.drawLabel(mc, mouseX, mouseY);
         coordinatesLabel.drawLabel(mc, mouseX, mouseY);
 
-        fontRenderer.drawString("Icon:", this.width/2 - 80, this.height/2, 0xFFFFFF, true);
-        fontRenderer.drawString("Colour:", this.width/2, this.height/2, 0xFFFFFF, true);
+        fontRenderer.drawString("Icon:", this.width / 2.0f - 80, this.height / 2.0f, 0xFFFFFF, true);
+        fontRenderer.drawString("Colour:", this.width / 2.0f, this.height / 2.0f, 0xFFFFFF, true);
 
         float centreX = this.width / 2f - 60 + 9;
         float centreZ = this.height / 2f + 10 + 9;
@@ -247,7 +247,10 @@ public class WaypointCreationMenu extends UI {
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
         if (keyCode == Keyboard.KEY_TAB) {
-            Utils.tab(nameField, xCoordField, zCoordField, yCoordField, colorWheel.textBox.textField);
+            Utils.tab(
+                Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT) ? -1 : +1,
+                nameField, xCoordField, zCoordField, yCoordField, colorWheel.textBox.textField
+            );
             return;
         }
         super.keyTyped(typedChar, keyCode);

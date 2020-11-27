@@ -22,16 +22,6 @@ public class ManaBarOverlay extends Overlay {
         super("Mana Bar", 81, 21, true, 0.5f, 1.0f, 10, -38, OverlayGrowFrom.MIDDLE_LEFT, RenderGameOverlayEvent.ElementType.FOOD, RenderGameOverlayEvent.ElementType.HEALTHMOUNT);
     }
 
-//    @Setting.Limitations.FloatLimit(min = 0f, max = 10f)
-//    @Setting(displayName = "Animation Speed", description = "How fast should the bar changes happen(0 for instant)")
-//    public float animated = 2f;
-
-
-    /* Temp in UtilitiesConfig so users can change textures on the fly
-    @Setting(displayName = "Texture", description = "What texture to use")
-    public ManaTextures texture = ManaTextures.a;
-    */
-
     @Setting(displayName = "Flip", description = "Should the filling of the bar be flipped")
     public boolean flip = true;
 
@@ -80,6 +70,9 @@ public class ManaBarOverlay extends Overlay {
             case Skyrim:
                 drawDefaultBar(-1, 8, 148, 163, textColor);
                 break;
+            case Rune:
+                drawDefaultBar(-1, 8, 164, 179, textColor);
+                break;
         }
     }
 
@@ -88,6 +81,7 @@ public class ManaBarOverlay extends Overlay {
             drawString(getPlayerInfo().getCurrentMana() + " ✺ " + getPlayerInfo().getMaxMana(), textPositionOffset.a - (81-OverlayConfig.Mana.INSTANCE.width), textPositionOffset.b, cc, SmartFontRenderer.TextAlignment.MIDDLE, OverlayConfig.Mana.INSTANCE.textShadow);
         }
         rotate(OverlayConfig.Mana.INSTANCE.overlayRotation.getDegrees());
-        drawProgressBar(Textures.Overlays.bars_mana, OverlayConfig.Mana.INSTANCE.width, y1, 0, y2, ty1, ty2, (flip ? -mana : mana) / (float) getPlayerInfo().getMaxMana());
+        drawProgressBar(Textures.Overlays.bars_mana, OverlayConfig.Mana.INSTANCE.width, y1, 0, y2, 0, ty1, 81, ty2, (flip ? -mana : mana) / (float) getPlayerInfo().getMaxMana());
     }
+
 }

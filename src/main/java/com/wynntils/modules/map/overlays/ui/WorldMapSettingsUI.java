@@ -23,17 +23,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.lwjgl.input.Mouse;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.*;
 
 public class WorldMapSettingsUI extends GuiScreen {
 
-    private HashMap<String, Boolean> enabledMapIcons, enabledMinimapIcons;
+    private Map<String, Boolean> enabledMapIcons, enabledMinimapIcons;
     private int page = 0;
     private int maxPage;
-    private ArrayList<Button> settingButtons = new ArrayList<>();
+    private List<Button> settingButtons = Collections.EMPTY_LIST;
     private GuiButton textureButton, nextPageButton, previousPageButton;
 
     public WorldMapSettingsUI() {
@@ -55,10 +52,9 @@ public class WorldMapSettingsUI extends GuiScreen {
         page = 0;
         maxPage = 0;
 
-        settingButtons.clear();
-        settingButtons.ensureCapacity(2 * enabledMapIcons.size());
+        this.settingButtons = new ArrayList<>(2 * enabledMapIcons.size());
 
-        ArrayList<String> keys = new ArrayList<>(enabledMapIcons.keySet());
+        List<String> keys = new ArrayList<>(enabledMapIcons.keySet());
         keys.sort(Comparator.<String, Float>comparing(i -> {
             MapApiIcon icon = MapApiIcon.getFree(i, IconTexture.Classic);
             return -icon.getSizeX() * icon.getSizeZ();
@@ -97,7 +93,7 @@ public class WorldMapSettingsUI extends GuiScreen {
 
         // Draw labels rotated 45 degrees
         GlStateManager.pushMatrix();
-        GlStateManager.translate((this.width-399)/2 + 286, 29f, 0f);
+        GlStateManager.translate((this.width-399) / 2.0f + 286, 29f, 0f);
         GlStateManager.rotate(-45, 0, 0, 1);
         this.fontRenderer.drawString("Main map", 0, 0, 0xFFFFFFFF);
         GlStateManager.translate(11 / MathHelper.SQRT_2, 17 / MathHelper.SQRT_2, 0f);
@@ -204,9 +200,9 @@ public class WorldMapSettingsUI extends GuiScreen {
     @Override
     public void handleMouseInput() throws IOException {
         super.handleMouseInput();
-        int mDwehll = Mouse.getEventDWheel() * CoreDBConfig.INSTANCE.scrollDirection.getScrollDirection();
-        if (mDwehll != 0) {
-            changePage(mDwehll < 0 ? +1 : -1);
+        int mDWheel = Mouse.getEventDWheel() * CoreDBConfig.INSTANCE.scrollDirection.getScrollDirection();
+        if (mDWheel != 0) {
+            changePage(mDWheel < 0 ? +1 : -1);
         }
     }
 

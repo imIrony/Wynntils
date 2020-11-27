@@ -4,6 +4,7 @@
 
 package com.wynntils.modules.questbook.overlays.ui;
 
+import com.wynntils.core.framework.enums.wynntils.WynntilsSound;
 import com.wynntils.core.framework.rendering.ScreenRenderer;
 import com.wynntils.core.framework.rendering.SmartFontRenderer;
 import com.wynntils.core.framework.rendering.colors.CommonColors;
@@ -23,6 +24,7 @@ import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.text.TextFormatting;
+import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
@@ -33,7 +35,7 @@ import java.util.List;
 
 public class ItemPage extends QuestBookPage {
 
-    private ArrayList<ItemProfile> itemSearch;
+    private List<ItemProfile> itemSearch;
 
     private boolean byAlphabetical = true;
     private boolean byLevel = false;
@@ -130,7 +132,7 @@ public class ItemPage extends QuestBookPage {
             }
 
             // filter ++
-            render.drawString("Item Filter", x - 84, y + 20, CommonColors.BLACK, SmartFontRenderer.TextAlignment.MIDDLE, SmartFontRenderer.TextShadow.NONE);
+            render.drawString("Item Filter", x - 80, y + 20, CommonColors.BLACK, SmartFontRenderer.TextAlignment.MIDDLE, SmartFontRenderer.TextShadow.NONE);
 
             int placed = 0;
             int plusY = 0;
@@ -193,12 +195,6 @@ public class ItemPage extends QuestBookPage {
 
             render.drawString("Available Items", x + 80, y - 78, CommonColors.BLACK, SmartFontRenderer.TextAlignment.MIDDLE, SmartFontRenderer.TextShadow.NONE);
 
-            // page counter including search
-            int pages = itemSearch.size() <= 42 ? 1 : (int) Math.ceil(itemSearch.size() / 42d);
-            if (pages < currentPage) {
-                currentPage = pages;
-            }
-
             if (byAlphabetical) itemSearch.sort((o1, o2) -> o1.getDisplayName().compareToIgnoreCase(o2.getDisplayName()));
             if (byLevel) itemSearch.sort(Comparator.comparingInt(c -> -c.getRequirements().getLevel()));
             if (byRarity) itemSearch.sort(Comparator.comparingInt(c -> -c.getTier().getPriority()));
@@ -208,9 +204,7 @@ public class ItemPage extends QuestBookPage {
             // but next and back button
             if (currentPage == pages) {
                 render.drawRect(Textures.UIs.quest_book, x + 128, y + 88, 223, 222, 18, 10);
-                acceptNext = false;
             } else {
-                acceptNext = true;
                 if (posX >= -145 && posX <= -127 && posY >= -97 && posY <= -88) {
                     render.drawRect(Textures.UIs.quest_book, x + 128, y + 88, 223, 222, 18, 10);
                 } else {
@@ -219,10 +213,8 @@ public class ItemPage extends QuestBookPage {
             }
 
             if (currentPage == 1) {
-                acceptBack = false;
                 render.drawRect(Textures.UIs.quest_book, x + 13, y + 88, 241, 222, 18, 10);
             } else {
-                acceptBack = true;
                 if (posX >= -30 && posX <= -13 && posY >= -97 && posY <= -88) {
                     render.drawRect(Textures.UIs.quest_book, x + 13, y + 88, 241, 222, 18, 10);
                 } else {
@@ -245,7 +237,6 @@ public class ItemPage extends QuestBookPage {
                 int maxY = y - 66 + (currentY * 20);
                 int minX = x + 38 + (placedCubes * 20);
                 int minY = y - 50 + (currentY * 20);
-
 
                 ItemProfile pf = itemSearch.get(i);
 
@@ -306,7 +297,7 @@ public class ItemPage extends QuestBookPage {
 
                     render.drawItemStack(pf.getGuideStack(), maxX, maxY, false);
 
-                    ArrayList<String> lore = new ArrayList<>();
+                    List<String> lore = new ArrayList<>();
                     lore.add(pf.getGuideStack().getDisplayName());
                     lore.addAll(ItemUtils.getLore(pf.getGuideStack()));
 
@@ -336,16 +327,14 @@ public class ItemPage extends QuestBookPage {
         ScaledResolution res = new ScaledResolution(mc);
         int posX = ((res.getScaledWidth()/2) - mouseX); int posY = ((res.getScaledHeight()/2) - mouseY);
 
-        if (acceptNext && posX >= -145 && posX <= -127 && posY >= -97 && posY <= -88) {
-            Minecraft.getMinecraft().getSoundHandler().playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1f));
-            currentPage++;
+        if (posX >= -145 && posX <= -127 && posY >= -97 && posY <= -88) {
+            goForward();
             return;
-        } else if (acceptBack && posX >= -30 && posX <= -13 && posY >= -97 && posY <= -88) {
-            Minecraft.getMinecraft().getSoundHandler().playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1f));
-            currentPage--;
+        } else if (posX >= -30 && posX <= -13 && posY >= -97 && posY <= -88) {
+            goBack();
             return;
         } else if (posX >= 74 && posX <= 90 && posY >= 37 & posY <= 46) {
-            Minecraft.getMinecraft().getSoundHandler().playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1f));
+            WynntilsSound.QUESTBOOK_PAGE.play();
             QuestBookPages.MAIN.getPage().open(false);
             return;
         } else if (selected == 1) {
@@ -370,6 +359,7 @@ public class ItemPage extends QuestBookPage {
                 byLevel = false;
             }
         } else if (selected >= 10) {
+            if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) resetFilters();
             switch (selected / 10) {
                 case 1:
                     allowHelmet = !allowHelmet;
@@ -444,11 +434,30 @@ public class ItemPage extends QuestBookPage {
             String lowerText = currentText.toLowerCase();
             itemSearch.removeIf(c -> !doesSearchMatch(c.getDisplayName().toLowerCase(), lowerText));
         }
+
+        pages = itemSearch.size() <= 42 ? 1 : (int) Math.ceil(itemSearch.size() / 42d);
+        currentPage = Math.min(currentPage, pages);
+        refreshAccepts();
     }
 
     @Override
     public List<String> getHoveredDescription() {
         return Arrays.asList(TextFormatting.GOLD + "[>] " + TextFormatting.BOLD + "Item Guide", TextFormatting.GRAY + "See all items", TextFormatting.GRAY + "currently available", TextFormatting.GRAY + "in the game.", "", TextFormatting.GREEN + "Left click to select");
+    }
+
+    private void resetFilters() {
+        allowHelmet = false;
+        allowChestplate = false;
+        allowBoots = false;
+        allowLeggings = false;
+        allowWands = false;
+        allowSpears = false;
+        allowDaggers = false;
+        allowBows = false;
+        allowReliks = false;
+        allowRings = false;
+        allowNecklaces = false;
+        allowBracelets = false;
     }
 
 }

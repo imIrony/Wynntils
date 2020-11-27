@@ -4,6 +4,7 @@
 
 package com.wynntils.webapi.profiles.item;
 
+import com.wynntils.core.framework.enums.ClassType;
 import com.wynntils.core.utils.StringUtils;
 import com.wynntils.modules.utilities.configs.UtilitiesConfig;
 import com.wynntils.webapi.profiles.item.enums.ItemAttackSpeed;
@@ -12,6 +13,7 @@ import com.wynntils.webapi.profiles.item.enums.MajorIdentification;
 import com.wynntils.webapi.profiles.item.objects.IdentificationContainer;
 import com.wynntils.webapi.profiles.item.objects.ItemInfoContainer;
 import com.wynntils.webapi.profiles.item.objects.ItemRequirementsContainer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -20,6 +22,7 @@ import net.minecraft.nbt.NBTTagString;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static net.minecraft.util.text.TextFormatting.*;
@@ -36,21 +39,22 @@ public class ItemProfile {
     ItemInfoContainer itemInfo;
     ItemRequirementsContainer requirements;
 
-    HashMap<String, String> damageTypes = new HashMap<>();
-    HashMap<String, Integer> defenseTypes = new HashMap<>();
-    HashMap<String, IdentificationContainer> statuses = new HashMap<>();
+    Map<String, String> damageTypes = new HashMap<>();
+    Map<String, Integer> defenseTypes = new HashMap<>();
+    Map<String, IdentificationContainer> statuses = new HashMap<>();
 
-    ArrayList<MajorIdentification> majorIds = new ArrayList<>();
+    List<MajorIdentification> majorIds = new ArrayList<>();
 
     String restriction;
     String lore;
 
     transient ItemStack guideStack = null;
+    transient boolean replacedLore = false;
 
     public ItemProfile(String displayName,
                        ItemTier tier, boolean identified, ItemAttackSpeed attackSpeed, ItemInfoContainer itemInfo,
-                       ItemRequirementsContainer requirements, HashMap<String, String> damageTypes,
-                       HashMap<String, Integer> defenseTypes, HashMap<String, IdentificationContainer> statuses,
+                       ItemRequirementsContainer requirements, Map<String, String> damageTypes,
+                       Map<String, Integer> defenseTypes, Map<String, IdentificationContainer> statuses,
                        ArrayList<MajorIdentification> majorIds, String restriction, String lore) {}
 
     public String getDisplayName() {
@@ -81,19 +85,19 @@ public class ItemProfile {
         return requirements;
     }
 
-    public HashMap<String, String> getDamageTypes() {
+    public Map<String, String> getDamageTypes() {
         return damageTypes;
     }
 
-    public HashMap<String, Integer> getDefenseTypes() {
+    public Map<String, Integer> getDefenseTypes() {
         return defenseTypes;
     }
 
-    public HashMap<String, IdentificationContainer> getStatuses() {
+    public Map<String, IdentificationContainer> getStatuses() {
         return statuses;
     }
 
-    public ArrayList<MajorIdentification> getMajorIds() {
+    public List<MajorIdentification> getMajorIds() {
         return majorIds;
     }
 
@@ -101,7 +105,15 @@ public class ItemProfile {
         return restriction;
     }
 
+    public ClassType getClassNeeded() {
+        return getRequirements().getRealClass(this.getItemInfo().getType());
+    }
+
     public String getLore() {
+        if (lore != null && !replacedLore) {
+            lore = lore.replace("\\[", "[").replace("\\]", "]").replace("[Community Event Winner] ", "[Community Event Winner]\n");
+            replacedLore = true;
+        }
         return lore;
     }
 
@@ -180,19 +192,19 @@ public class ItemProfile {
 
             // ids
             if (statuses.size() > 0) {
-                HashMap<String, String> statusLore = new HashMap<>();
+                Map<String, String> statusLore = new HashMap<>();
                 for (String idName : statuses.keySet()) {
                     IdentificationContainer id = statuses.get(idName);
 
                     statusLore.put(idName, getIDLore(id, idName));
                 }
 
-                itemLore.addAll(IdentificationOrderer.INSTANCE.order(statusLore, UtilitiesConfig.INSTANCE.addItemIdentificationSpacing));
+                itemLore.addAll(IdentificationOrderer.INSTANCE.order(statusLore, UtilitiesConfig.Identifications.INSTANCE.addSpacing));
                 itemLore.add(" ");
             }
 
             // major ids
-            if (majorIds.size() > 0) {
+            if (majorIds != null && majorIds.size() > 0) {
                 for (MajorIdentification majorId : majorIds) {
                     Stream.of(StringUtils.wrapTextBySize(majorId.asLore(), 150)).forEach(c -> itemLore.add(DARK_AQUA + c));
                 }
@@ -209,8 +221,8 @@ public class ItemProfile {
             if (restriction != null) itemLore.add(RED + StringUtils.capitalizeFirst(restriction) + " Item");
 
             // item lore
-            if (!lore.isEmpty()) {
-                Stream.of(StringUtils.wrapTextBySize(lore, 150)).forEach(c -> itemLore.add(DARK_GRAY + c));
+            if (lore != null && !lore.isEmpty()) {
+                itemLore.addAll(Minecraft.getMinecraft().fontRenderer.listFormattedStringToWidth(DARK_GRAY + this.getLore(), 150));
             }
         }
 
@@ -245,12 +257,21 @@ public class ItemProfile {
 
     private static String getIDLore(IdentificationContainer id, String idName) {
         int baseValue = id.getBaseValue();
+
         String lore;
+
         if (id.hasConstantValue())
-            lore = (baseValue < 0 ? RED.toString() : baseValue > 0 ? GREEN + "+" : GRAY.toString()) + baseValue;
+            if (IdentificationOrderer.INSTANCE.isInverted(idName))
+                lore = (baseValue < 0 ? GREEN.toString() : baseValue > 0 ? RED + "+" : GRAY.toString()) + baseValue;
+            else
+                lore = (baseValue < 0 ? RED.toString() : baseValue > 0 ? GREEN + "+" : GRAY.toString()) + baseValue;
         else
-            lore = ((id.getMin() < 0 ? RED.toString() : GREEN + "+") + id.getMin()) +
-                ((id.getMax() < 0 ? DARK_RED + " to " + RED : DARK_GREEN + " to " + GREEN + "+") + id.getMax());
+            if (IdentificationOrderer.INSTANCE.isInverted(idName))
+                lore = ((id.getMin() < 0 ? GREEN.toString() : RED + "+") + id.getMin()) +
+                        ((id.getMax() < 0 ? DARK_GREEN + " to " + GREEN : DARK_RED + " to " + RED + "+") + id.getMax());
+            else
+                lore = ((id.getMin() < 0 ? RED.toString() : GREEN + "+") + id.getMin()) +
+                        ((id.getMax() < 0 ? DARK_RED + " to " + RED : DARK_GREEN + " to " + GREEN + "+") + id.getMax());
 
         return lore + id.getType().getInGame() + " " + GRAY + id.getAsLongName(idName);
     }

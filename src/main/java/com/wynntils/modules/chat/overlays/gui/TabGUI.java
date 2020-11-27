@@ -13,9 +13,7 @@ import net.minecraftforge.fml.client.config.GuiCheckBox;
 import org.lwjgl.input.Keyboard;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 import java.util.regex.Pattern;
 
 
@@ -30,7 +28,7 @@ public class TabGUI extends GuiScreen {
         if (id != -2)
             tab = TabManager.getTabById(id);
     }
-    ArrayList<GuiCheckBox> simpleRegexSettings = new ArrayList<>();
+    List<GuiCheckBox> simpleRegexSettings = new ArrayList<>();
 
     // ui things
     GuiButton saveButton;
@@ -171,13 +169,9 @@ public class TabGUI extends GuiScreen {
             regexTextField.setVisible(!simple);
             regexLabel.visible = !simple;
             simpleSettings.visible = simple;
-            simpleRegexSettings.forEach(b -> {
-                b.visible = simple;
-            });
+            simpleRegexSettings.forEach(b -> b.visible = simple);
         } else if (button == allRegex) {
-            simpleRegexSettings.forEach(b -> {
-                b.setIsChecked(((GuiCheckBox) button).isChecked());
-            });
+            simpleRegexSettings.forEach(b -> b.setIsChecked(((GuiCheckBox) button).isChecked()));
         }
         if (button.id >= 10 && button.id <= 16) {
             regexTextField.setText(regexCreator());
@@ -270,13 +264,11 @@ public class TabGUI extends GuiScreen {
         regexValid = false;
     }
 
-    private HashMap<String, Boolean> regexSettingsCreator() {
+    private Map<String, Boolean> regexSettingsCreator() {
         if (advancedButton.displayString.equals("Hide Advanced Settings")) return null;
 
-        HashMap<String, Boolean> r = new HashMap<>();
-        simpleRegexSettings.forEach(b->{
-            r.put(b.displayString, b.isChecked());
-        });
+        Map<String, Boolean> r = new HashMap<>();
+        simpleRegexSettings.forEach(b-> r.put(b.displayString, b.isChecked()));
         return r;
     }
 
@@ -294,8 +286,8 @@ public class TabGUI extends GuiScreen {
     private String regexCreator() {
         if (advancedButton.displayString.equals("Hide Advanced Settings")) return "";
 
-        HashMap<String, Boolean> regexSettings = regexSettingsCreator();
-        ArrayList<String> result = new ArrayList<>();
+        Map<String, Boolean> regexSettings = regexSettingsCreator();
+        List<String> result = new ArrayList<>();
         boolean allIsPresent = regexSettings.get("All");
 
         regexSettings.forEach((k, v) -> {

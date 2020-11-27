@@ -51,7 +51,7 @@ public class OverlayPositionsUI extends UI {
             }
         }
         onClose();
-    });
+    }, 0, 0, 17, 45);
 
     public UIEButton applyButton = new UIEButton("Apply", Textures.UIs.button_a, 0.5f, 0.5f, -48, 0, -10, true, (ui, mouseButton) -> {
         for (OverlayButton settingsContainer : registeredOverlaySettings) {
@@ -70,7 +70,7 @@ public class OverlayPositionsUI extends UI {
             }
         }
         onClose();
-    });
+    }, 0, 0, 17, 45);
 
     public UIEButton resetButton = new UIEButton("Default", Textures.UIs.button_a, 0.5f, 0.5f, -22, 15, -10, true, (ui, mouseButton) -> {
         for (OverlayButton settingsContainer : registeredOverlaySettings) {
@@ -81,7 +81,7 @@ public class OverlayPositionsUI extends UI {
                 ex.printStackTrace();
             }
         }
-    });
+    }, 0, 0, 17, 45);
 
     public OverlayPositionsUI(GuiScreen parentScreen) {
         this.parentScreen = parentScreen;
@@ -121,6 +121,7 @@ public class OverlayPositionsUI extends UI {
     @Override
     public void onRenderPreUIE(ScreenRenderer render) {
         drawDefaultBackground();
+
         for (UIEClickZone zone : registeredOverlaySettings) {
             zone.render(mouseX, mouseY);
         }
@@ -366,25 +367,25 @@ public class OverlayPositionsUI extends UI {
                     overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX);
                     overlay.position.offsetY = roundToGridPosVertical(position.offsetY);
                 } else if (overlay.growth == Overlay.OverlayGrowFrom.TOP_CENTRE) {
-                    overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX + (overlay.staticSize.x / 2));
+                    overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX + (overlay.staticSize.x / 2.0f));
                     overlay.position.offsetY = roundToGridPosVertical(position.offsetY);
                 } else if (overlay.growth == Overlay.OverlayGrowFrom.TOP_RIGHT) {
                     overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX + overlay.staticSize.x);
                     overlay.position.offsetY = roundToGridPosVertical(position.offsetY);
                 } else if (overlay.growth == Overlay.OverlayGrowFrom.MIDDLE_LEFT) {
                     overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX);
-                    overlay.position.offsetY = roundToGridPosVertical(position.offsetY + (overlay.staticSize.y / 2));
+                    overlay.position.offsetY = roundToGridPosVertical(position.offsetY + (overlay.staticSize.y / 2.0f));
                 } else if (overlay.growth == Overlay.OverlayGrowFrom.MIDDLE_CENTRE) {
-                    overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX + (overlay.staticSize.x / 2));
-                    overlay.position.offsetY = roundToGridPosVertical(position.offsetY + (overlay.staticSize.y / 2));
+                    overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX + (overlay.staticSize.x / 2.0f));
+                    overlay.position.offsetY = roundToGridPosVertical(position.offsetY + (overlay.staticSize.y / 2.0f));
                 } else if (overlay.growth == Overlay.OverlayGrowFrom.MIDDLE_RIGHT) {
                     overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX + overlay.staticSize.x);
-                    overlay.position.offsetY = roundToGridPosVertical(position.offsetY + (overlay.staticSize.y / 2));
+                    overlay.position.offsetY = roundToGridPosVertical(position.offsetY + (overlay.staticSize.y / 2.0f));
                 } else if (overlay.growth == Overlay.OverlayGrowFrom.BOTTOM_LEFT) {
                     overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX);
                     overlay.position.offsetY = roundToGridPosVertical(position.offsetY + overlay.staticSize.y);
                 } else if (overlay.growth == Overlay.OverlayGrowFrom.BOTTOM_CENTRE) {
-                    overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX + (overlay.staticSize.x / 2));
+                    overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX + (overlay.staticSize.x / 2.0f));
                     overlay.position.offsetY = roundToGridPosVertical(position.offsetY + overlay.staticSize.y);
                 } else if (overlay.growth == Overlay.OverlayGrowFrom.BOTTOM_RIGHT) {
                     overlay.position.offsetX = roundToGridPosHorizontal(position.offsetX + overlay.staticSize.x);

@@ -12,6 +12,7 @@ import com.wynntils.core.framework.rendering.textures.Textures;
 import com.wynntils.modules.map.MapModule;
 import com.wynntils.modules.map.configs.MapConfig;
 import com.wynntils.modules.map.instances.MapProfile;
+import com.wynntils.modules.map.managers.LootRunManager;
 import com.wynntils.modules.map.overlays.objects.MapCompassIcon;
 import com.wynntils.modules.map.overlays.objects.MapIcon;
 import net.minecraft.client.renderer.BufferBuilder;
@@ -22,7 +23,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import org.lwjgl.opengl.GL11;
 
-import java.awt.*;
+import java.awt.Point;
 import java.util.function.Consumer;
 
 public class MiniMapOverlay extends Overlay {
@@ -183,6 +184,7 @@ public class MiniMapOverlay extends Overlay {
                 MapIcon.getWaypoints().forEach(consumer);
                 MapIcon.getPathWaypoints().forEach(consumer);
                 MapIcon.getPlayers().forEach(consumer);
+                LootRunManager.getMapPathWaypoints().forEach(consumer);
 
                 MapIcon compassIcon = MapIcon.getCompass();
 
@@ -279,7 +281,7 @@ public class MiniMapOverlay extends Overlay {
                 }
             } else if (MapConfig.INSTANCE.mapFormat == MapConfig.MapFormat.CIRCLE) {
                 if (MapConfig.Textures.INSTANCE.textureType == MapConfig.TextureType.Paper) {
-                    drawRect(Textures.Map.paper_map_textures, -3, -3, mapSize + 3, mapSize + 3, 217, 217, 434, 438);
+                    drawRect(Textures.Map.paper_map_textures, -3, -3, mapSize + 3, mapSize + 3, 0, 217, 217, 438);
                 } else if (MapConfig.Textures.INSTANCE.textureType == MapConfig.TextureType.Wynn) {
                     // todo texture
                 } else if (MapConfig.Textures.INSTANCE.textureType == MapConfig.TextureType.Gilded) {

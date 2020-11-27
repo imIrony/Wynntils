@@ -62,7 +62,9 @@ public class ServerResourcePackManager {
             boolean hashMatches = false;
             try (InputStream is = new FileInputStream(new File(new File(Minecraft.getMinecraft().gameDir, "server-resource-packs"), fileName))) {
                 hashMatches = DigestUtils.sha1Hex(is).equalsIgnoreCase(hash);
-            } catch (IOException err) { }
+            } catch (IOException err) {
+                err.printStackTrace();
+            }
 
             // Already loaded this pack if matches so cancel
             return hashMatches;
@@ -83,7 +85,9 @@ public class ServerResourcePackManager {
 
         try (InputStream is = new FileInputStream(new File(new File(Minecraft.getMinecraft().gameDir, "server-resource-packs"), fileName))) {
             return DigestUtils.sha1Hex(is).equalsIgnoreCase(hash);
-        } catch (IOException err) { }
+        } catch (IOException err) {
+            err.printStackTrace();
+        }
 
         return false;
     }
@@ -91,16 +95,24 @@ public class ServerResourcePackManager {
     public static void loadServerResourcePack() {
         // Does not download if not found / invalid
         if (UtilitiesConfig.INSTANCE.lastServerResourcePack.isEmpty()) return;
+        IResourcePack current = Minecraft.getMinecraft().getResourcePackRepository().getServerResourcePack();
+
         String resourcePack = UtilitiesConfig.INSTANCE.lastServerResourcePack;
         String hash = UtilitiesConfig.INSTANCE.lastServerResourcePackHash;
         String fileName = DigestUtils.sha1Hex(resourcePack);
+
+        if (current != null && current.getPackName().equals(fileName)) {
+            return; // Already applied
+        }
 
         File f = new File(new File(Minecraft.getMinecraft().gameDir, "server-resource-packs"), fileName);
 
         boolean valid = false;
         try (InputStream is = new FileInputStream(f)) {
             valid = DigestUtils.sha1Hex(is).equalsIgnoreCase(hash);
-        } catch (IOException err) { }
+        } catch (IOException err) {
+            err.printStackTrace();
+        }
 
         if (!valid) return;
 
@@ -108,6 +120,8 @@ public class ServerResourcePackManager {
     }
 
     public static void downloadServerResourcePack() {
+        if (isLoaded()) return;
+
         if (UtilitiesConfig.INSTANCE.lastServerResourcePack.isEmpty()) return;
         try {
             Minecraft.getMinecraft().getResourcePackRepository().downloadResourcePack(UtilitiesConfig.INSTANCE.lastServerResourcePack, UtilitiesConfig.INSTANCE.lastServerResourcePackHash).get();

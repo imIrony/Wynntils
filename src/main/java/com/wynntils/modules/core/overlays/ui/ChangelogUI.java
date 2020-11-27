@@ -1,5 +1,5 @@
 /*
- *  * Copyright © Wynntils - 2018 - 2020.
+ *  * Copyright © Wynntils - 2020.
  */
 
 package com.wynntils.modules.core.overlays.ui;
@@ -26,14 +26,17 @@ import java.util.List;
 
 public class ChangelogUI extends GuiScreen {
 
+    private static final CustomColor SCROLL_BACKGROUND = new CustomColor(191, 159, 110);
+    private static final CustomColor SCROLL_ACTIVE = new CustomColor(248, 207, 145);
+
     ScreenRenderer renderer = new ScreenRenderer();
 
     GuiScreen previousGui;
 
-    ArrayList<String> changelogContent = new ArrayList<>();
+    List<String> changelogContent = new ArrayList<>();
 
     int scrollbarPosition = 0;
-    int scrollbarSize = 0;
+    int scrollbarSize;
 
     boolean major;
 
@@ -85,7 +88,7 @@ public class ChangelogUI extends GuiScreen {
             if (mc.currentScreen != loadingScreen) {
                 return;
             }
-            ArrayList<String> changelog = WebManager.getChangelog(major, forceLatest);
+            List<String> changelog = WebManager.getChangelog(major, forceLatest);
             if (mc.currentScreen != loadingScreen) {
                 return;
             }
@@ -114,8 +117,8 @@ public class ChangelogUI extends GuiScreen {
         renderer.drawString("Changelog " + (CoreDBConfig.INSTANCE.updateStream == UpdateStream.CUTTING_EDGE && !major ? "B" + Reference.BUILD_NUMBER : "v" + Reference.VERSION), middleX - 105, middleY - 83, CommonColors.RED, SmartFontRenderer.TextAlignment.LEFT_RIGHT, SmartFontRenderer.TextShadow.NONE);
 
         // scrollbar
-        renderer.drawRect(new CustomColor(0.69f, 0.658f, 0.576f), (int)middleX + 119, (int)middleY - 80, (int)middleX + 119 + 5, (int)middleY + 40);
-        renderer.drawRect(new CustomColor(0.917f, 0.8666f, 0.760f), (int)middleX + 120, (int)middleY - 79 + scrollbarPosition, (int)middleX + 123, (int)middleY - 79 + scrollbarSize + scrollbarPosition);
+        renderer.drawRect(SCROLL_BACKGROUND, (int)middleX + 119, (int)middleY - 80, (int)middleX + 119 + 5, (int)middleY + 40);
+        renderer.drawRect(SCROLL_ACTIVE, (int)middleX + 120, (int)middleY - 79 + scrollbarPosition, (int)middleX + 123, (int)middleY - 79 + scrollbarSize + scrollbarPosition);
 
         // text area
         ScreenRenderer.enableScissorTest((int) middleX - 110, (int) middleY - 71, 205, 155);
@@ -124,9 +127,9 @@ public class ChangelogUI extends GuiScreen {
         int textX = (int)middleX - 105;
         int baseY = (int)middleY - 70;
 
-        float scrollPostionOffset = scrollbarSize == 118 ? 0 : (((changelogContent.size()/15) * 159) * scrollPercent);
+        float scrollPositionOffset = scrollbarSize == 118 ? 0 : (((changelogContent.size() / 15.0f) * 159) * scrollPercent);
         for (String changelogLine : changelogContent) {
-            renderer.drawString(changelogLine.replace("%user%", Minecraft.getMinecraft().getSession().getUsername()), textX, baseY - scrollPostionOffset, CommonColors.BROWN, SmartFontRenderer.TextAlignment.LEFT_RIGHT, SmartFontRenderer.TextShadow.NONE);
+            renderer.drawString(changelogLine.replace("%user%", Minecraft.getMinecraft().getSession().getUsername()), textX, baseY - scrollPositionOffset, CommonColors.BROWN, SmartFontRenderer.TextAlignment.LEFT_RIGHT, SmartFontRenderer.TextShadow.NONE);
 
             baseY += 10;
         }
@@ -152,11 +155,11 @@ public class ChangelogUI extends GuiScreen {
 
     @Override
     public void handleMouseInput() {
-        int mDwehll = Mouse.getEventDWheel() * CoreDBConfig.INSTANCE.scrollDirection.getScrollDirection();
+        int mDWheel = Mouse.getEventDWheel() * CoreDBConfig.INSTANCE.scrollDirection.getScrollDirection();
 
-        if (mDwehll <= -1) {
+        if (mDWheel <= -1) {
             updateScrollbarPosition(true);
-        } else if (mDwehll >= 1) updateScrollbarPosition(false);
+        } else if (mDWheel >= 1) updateScrollbarPosition(false);
 
     }
 

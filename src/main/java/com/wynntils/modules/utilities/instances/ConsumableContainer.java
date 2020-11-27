@@ -8,16 +8,23 @@ import com.wynntils.webapi.profiles.item.enums.IdentificationModifier;
 import net.minecraft.client.Minecraft;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class ConsumableContainer {
 
-    String name;
-    long expirationTime = 0;
+    private String name;
+    private long expirationTime = 0;
+    private boolean persistent = false;
 
-    HashMap<String, IdentificationHolder> effects = new HashMap<>();
+    Map<String, IdentificationHolder> effects = new HashMap<>();
 
     public ConsumableContainer(String name) {
         this.name = name;
+    }
+
+    public ConsumableContainer(String name, boolean persistent) {
+        this.name = name;
+        this.persistent = persistent;
     }
 
     /**
@@ -37,7 +44,7 @@ public class ConsumableContainer {
     /**
      * @return the effects for the current Consumable
      */
-    public HashMap<String, IdentificationHolder> getEffects() {
+    public Map<String, IdentificationHolder> getEffects() {
         return effects;
     }
 
@@ -89,6 +96,10 @@ public class ConsumableContainer {
      */
     public boolean hasExpired() {
         return Minecraft.getSystemTime() >= expirationTime;
+    }
+
+    public boolean isPersistent() {
+        return persistent;
     }
 
 }

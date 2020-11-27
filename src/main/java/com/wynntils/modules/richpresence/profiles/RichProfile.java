@@ -4,7 +4,7 @@
 
 package com.wynntils.modules.richpresence.profiles;
 
-import com.sun.jna.Memory;
+import com.sun.jna.DefaultTypeMapper;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
@@ -14,22 +14,30 @@ import com.wynntils.Reference;
 import com.wynntils.core.framework.instances.PlayerInfo;
 import com.wynntils.core.utils.helpers.MD5Verification;
 import com.wynntils.modules.richpresence.discordgamesdk.*;
+import com.wynntils.modules.richpresence.discordgamesdk.converters.EnumConverter;
+import com.wynntils.modules.richpresence.discordgamesdk.enums.*;
 import com.wynntils.modules.richpresence.events.RPCJoinHandler;
 import com.wynntils.webapi.WebManager;
-import com.wynntils.webapi.WebRequestHandler;
 import com.wynntils.webapi.downloader.DownloaderManager;
 import com.wynntils.webapi.downloader.enums.DownloadAction;
+import com.wynntils.webapi.request.Request;
+import com.wynntils.webapi.request.RequestHandler;
 import net.minecraft.client.gui.GuiScreen;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.function.IntConsumer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
 
 public class RichProfile {
 
-    public static final File GAME_SDK_FILE = new File(Reference.PLATFORM_NATIVES_ROOT, System.mapLibraryName("discord_game_sdk"));
+    private static final String GAME_SDK_VERSION = "v3.1.0";
+    public static final File GAME_SDK_FILE = new File(new File(new File(Reference.PLATFORM_NATIVES_ROOT, "discord_game_sdk"), GAME_SDK_VERSION), System.mapLibraryName("discord_game_sdk"));
+    public static final DefaultTypeMapper TYPE_MAPPER = new DefaultTypeMapper();
+    public static final Map<String, Object> OPTIONS = new HashMap<>();
 
     private IDiscordCore discordCore = null;
     private OverlayManager overlayManager = null;
@@ -45,41 +53,38 @@ public class RichProfile {
     private DiscordActivity activityToUseWhenReady = null;
     private boolean isBlankGuiOpen = false;
 
-    private boolean updatedDiscordUser = false;
-
     private long applicationID = 0;
 
     public RichProfile(long id) {
-        WebRequestHandler handler = new WebRequestHandler();
-        String apiRoot = WebManager.getApiUrls() == null ? null : WebManager.getApiUrls().get("RichPresence");
-        String url = apiRoot == null ? null : apiRoot + "versioning.php";
-        handler.addRequest(new WebRequestHandler.Request(url, "richpresence_versioning")
-            .cacheTo(new File(Reference.NATIVES_ROOT, "richpresence_versioning.txt"))
-            .handleWebReader(reader -> {
-                String md5 = reader.get(Platform.RESOURCE_PREFIX);
-                if (md5 != null && GAME_SDK_FILE.exists() && new MD5Verification(GAME_SDK_FILE).equals(md5)) {
-                    setup(id);
-                    return true;
-                }
-
-                if (md5 == null || apiRoot == null) {
-                    // No sdk on this platform or webapi is down
-                    setDisabled();
-                    return true;
-                }
-
-                DownloaderManager.queueDownload("Discord Game SDK", apiRoot + Platform.RESOURCE_PREFIX + "/" + System.mapLibraryName("discord_game_sdk"), Reference.PLATFORM_NATIVES_ROOT, DownloadAction.SAVE, (success) -> {
-                    if (!success) {
-                        setDisabled();
-                        return;
+        RequestHandler handler = new RequestHandler();
+        String apiRoot = (WebManager.getApiUrls() == null ? null : WebManager.getApiUrls().get("RichPresenceRoot")) + GAME_SDK_VERSION;
+        String url = apiRoot == null ? null : apiRoot + "/versioning.php";
+        setupTypeMapper();
+        handler.addRequest(new Request(url, "richpresence_versioning_" + GAME_SDK_VERSION)
+                .cacheTo(new File(Reference.NATIVES_ROOT, "richpresence_versioning_" + GAME_SDK_VERSION + ".txt"))
+                .handleWebReader(reader -> {
+                    String md5 = reader.get(Platform.RESOURCE_PREFIX);
+                    if (md5 != null && GAME_SDK_FILE.exists() && new MD5Verification(GAME_SDK_FILE).equals(md5)) {
+                        setup(id);
+                        return true;
                     }
 
-                    ModCore.mc().addScheduledTask(() -> {
-                        setup(id);
+                    if (md5 == null || apiRoot == null) {
+                        // No sdk on this platform or webapi is down
+                        setDisabled();
+                        return true;
+                    }
+
+                    DownloaderManager.queueDownload("Discord Game SDK", apiRoot + "/" + Platform.RESOURCE_PREFIX + "/" + System.mapLibraryName("discord_game_sdk"), RichProfile.GAME_SDK_FILE.getParentFile(), DownloadAction.SAVE, (success) -> {
+                        if (!success) {
+                            setDisabled();
+                            return;
+                        }
+
+                        ModCore.mc().addScheduledTask(() -> setup(id));
                     });
-                });
-                return true;
-        }));
+                    return true;
+                }));
         handler.dispatchAsync();
     }
 
@@ -130,13 +135,14 @@ public class RichProfile {
             createParams.user_events = userEvents;
             createParams.activity_events = activityEvents;
             createParams.overlay_events = overlayEvents;
-            createParams.flags = DiscordGameSDKLibrary.EDiscordCreateFlags.DiscordCreateFlags_NoRequireDiscord;
+            createParams.flags = EDiscordCreateFlags.DiscordCreateFlags_NoRequireDiscord.getOrdinal();
 
             overlayManager = null;
             IDiscordCore.ByReference[] array = new IDiscordCore.ByReference[] { new IDiscordCore.ByReference() };
-            gameSDK.DiscordCreate(DiscordGameSDKLibrary.DISCORD_VERSION, createParams, array);
+            EDiscordResult result = gameSDK.DiscordCreate(3, createParams, array);
             discordCore = array[0];
-            if (discordCore == null || discordCore.get_user_manager == null) {
+            if (discordCore == null || discordCore.get_user_manager == null || result != EDiscordResult.DiscordResult_Ok) {
+                Reference.LOGGER.warn("[RichPresence] Unable co connect to Discord: " + result);
                 // Discord client not running
                 setDisabled();
                 return;
@@ -157,6 +163,32 @@ public class RichProfile {
             e.printStackTrace();
             setDisabled();
         }
+    }
+
+    private void setupTypeMapper() {
+        TYPE_MAPPER.addTypeConverter(EDiscordActivityActionType.class, new EnumConverter<>(EDiscordActivityActionType.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordActivityJoinRequestReply.class, new EnumConverter<>(EDiscordActivityJoinRequestReply.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordActivityPartyPrivacy.class, new EnumConverter<>(EDiscordActivityPartyPrivacy.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordActivityType.class, new EnumConverter<>(EDiscordActivityType.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordCreateFlags.class, new EnumConverter<>(EDiscordCreateFlags.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordEntitlementType.class, new EnumConverter<>(EDiscordEntitlementType.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordImageType.class, new EnumConverter<>(EDiscordImageType.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordInputModeType.class, new EnumConverter<>(EDiscordInputModeType.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordKeyVariant.class, new EnumConverter<>(EDiscordKeyVariant.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordLobbySearchCast.class, new EnumConverter<>(EDiscordLobbySearchCast.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordLobbySearchComparison.class, new EnumConverter<>(EDiscordLobbySearchComparison.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordLobbySearchDistance.class, new EnumConverter<>(EDiscordLobbySearchDistance.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordLobbyType.class, new EnumConverter<>(EDiscordLobbyType.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordLogLevel.class, new EnumConverter<>(EDiscordLogLevel.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordMouseButton.class, new EnumConverter<>(EDiscordMouseButton.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordPremiumType.class, new EnumConverter<>(EDiscordPremiumType.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordRelationshipType.class, new EnumConverter<>(EDiscordRelationshipType.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordResult.class, new EnumConverter<>(EDiscordResult.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordSkuType.class, new EnumConverter<>(EDiscordSkuType.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordStatus.class, new EnumConverter<>(EDiscordStatus.class));
+        TYPE_MAPPER.addTypeConverter(EDiscordUserFlag.class, new EnumConverter<>(EDiscordUserFlag.class));
+
+        OPTIONS.put("type-mapper", TYPE_MAPPER);
     }
 
     private void setDisabled() {
@@ -205,6 +237,7 @@ public class RichProfile {
         if (joinSecret != null) {
             richPresenceSecrets.join = toBytes(joinSecret.toString(), 128);
             richPresenceParty.id = toBytes(joinSecret.id, 128);
+            richPresenceParty.privacy = EDiscordActivityPartyPrivacy.DiscordActivityParty_Privacy_Private;
             DiscordPartySize partySize = new DiscordPartySize();
             partySize.current_size = PlayerInfo.getPlayerInfo().getPlayerParty().getPartyMembers().size();
             partySize.max_size = 15;
@@ -255,6 +288,7 @@ public class RichProfile {
         if (joinSecret != null) {
             richPresenceSecrets.join = toBytes(joinSecret.toString(), 128);
             richPresenceParty.id = toBytes(joinSecret.id, 128);
+            richPresenceParty.privacy = EDiscordActivityPartyPrivacy.DiscordActivityParty_Privacy_Private;
             DiscordPartySize partySize = new DiscordPartySize();
             partySize.current_size = PlayerInfo.getPlayerInfo().getPlayerParty().getPartyMembers().size();
             partySize.max_size = 15;
@@ -303,6 +337,7 @@ public class RichProfile {
         if (joinSecret != null) {
             richPresenceSecrets.join = toBytes(joinSecret.toString(), 128);
             richPresenceParty.id = toBytes(joinSecret.id, 128);
+            richPresenceParty.privacy = EDiscordActivityPartyPrivacy.DiscordActivityParty_Privacy_Private;
             DiscordPartySize partySize = new DiscordPartySize();
             partySize.current_size = PlayerInfo.getPlayerInfo().getPlayerParty().getPartyMembers().size();
             partySize.max_size = 15;
@@ -353,6 +388,7 @@ public class RichProfile {
         if (joinSecret != null) {
             richPresenceSecrets.join = toBytes(joinSecret.toString(), 128);
             richPresenceParty.id = toBytes(joinSecret.id, 128);
+            richPresenceParty.privacy = EDiscordActivityPartyPrivacy.DiscordActivityParty_Privacy_Private;
             DiscordPartySize partySize = new DiscordPartySize();
             partySize.current_size = PlayerInfo.getPlayerInfo().getPlayerParty().getPartyMembers().size();
             partySize.max_size = 15;
@@ -394,11 +430,13 @@ public class RichProfile {
             if (joinSecret != null) {
                 lastStructure.secrets.join = toBytes(joinSecret.toString(), 128);
                 lastStructure.party.id = toBytes(joinSecret.id, 128);
+                lastStructure.party.privacy = EDiscordActivityPartyPrivacy.DiscordActivityParty_Privacy_Private;
                 lastStructure.party.size.current_size = PlayerInfo.getPlayerInfo().getPlayerParty().getPartyMembers().size();
                 lastStructure.party.size.max_size = 15;
             } else {
                 lastStructure.secrets.join = toBytes(null, 128);
                 lastStructure.party.id = toBytes(null, 128);
+                lastStructure.party.privacy = EDiscordActivityPartyPrivacy.DiscordActivityParty_Privacy_Private;
                 lastStructure.party.size.current_size = 0;
                 lastStructure.party.size.max_size = 0;
             }
@@ -451,15 +489,6 @@ public class RichProfile {
         return Arrays.copyOf(encoded, size);
     }
 
-    private static Memory toCString(String string) {
-        if (string == null) return null;
-        byte[] asBytes = string.getBytes(StandardCharsets.UTF_8);
-        Memory cString = new Memory(asBytes.length + 1);
-        cString.write(0, asBytes, 0, asBytes.length);
-        cString.setByte(asBytes.length, (byte) 0);
-        return cString;
-    }
-
     private static String bytesToString(byte[] bytes) {
         return Native.toString(bytes, StandardCharsets.UTF_8.name());
     }
@@ -506,13 +535,13 @@ public class RichProfile {
          * @see <a href="https://discordapp.com/developers/docs/game-sdk/overlay#openguildinvite">Docs</a>
          *
          * @param code End part of the discord guild invite link (e.g., "foo" for "discord.gg/foo")
-         * @param callback Takes a value from {@link com.wynntils.modules.richpresence.discordgamesdk.DiscordGameSDKLibrary.EDiscordResult}
+         * @param callback Takes a value from {@link com.wynntils.modules.richpresence.discordgamesdk.enums.EDiscordResult}
          * @return true if attempting to open the invite
          */
-        public boolean openGuildInvite(String code, IntConsumer callback) {
+        public boolean openGuildInvite(String code, Consumer<EDiscordResult> callback) {
             if (callback == null) return openGuildInvite(code, c -> {});
             if (cantCreate()) return false;
-            overlayManager.open_guild_invite.apply(overlayManager, toCString(code), Pointer.NULL, (null_pointer, result) -> callback.accept(result));
+            overlayManager.open_guild_invite.apply(overlayManager, code, Pointer.NULL, (null_pointer, result) -> callback.accept(result));
             return true;
         }
 
