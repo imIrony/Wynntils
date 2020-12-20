@@ -52,8 +52,8 @@ public class UtilitiesConfig extends SettingsClass {
     @Setting(displayName = "Prevent Clicking on Locked Items", description = "Should moving items to and from locked inventory slots be blocked?")
     public boolean preventSlotClicking = false;
 
-    @Setting(displayName = "Disable FOV Changes with Speed", description = "Should your FOV remain unchanged when you have speed?")
-    public boolean disableFovChanges = false;
+    @Setting(displayName = "FOV Scaling Function", description = "What scaling function should be used for speed-based FOV changes?")
+    public FovScalingFunction fovScalingFunction = FovScalingFunction.Vanilla;
 
     @Setting(displayName = "Auto Mount Horse", description = "Should you mount your horse automatically when it is spawned?")
     public boolean autoMount = false;
@@ -81,7 +81,7 @@ public class UtilitiesConfig extends SettingsClass {
 
     @Setting(displayName = "Show Leaderboard Badges", description = "Should leaderboard players have a badge above their heads?")
     public boolean renderLeaderboardBadges = true;
-    
+
     @Setting(displayName = "Shift-click Accessories", description = "Allow accessories to be shift-clicked on and off?")
     public boolean shiftClickAccessories = true;
 
@@ -96,6 +96,13 @@ public class UtilitiesConfig extends SettingsClass {
 
     @Setting
     public Map<String, SkillPointAllocation> skillPointLoadouts = new HashMap<>();
+
+    public enum FovScalingFunction {
+        Vanilla,
+        Arctangent,
+        Sprint_Only,
+        None
+    }
 
     @SettingsInfo(name = "identifications", displayPath = "Utilities/Identifications")
     public static class Identifications extends SettingsClass {
@@ -183,6 +190,12 @@ public class UtilitiesConfig extends SettingsClass {
 
         @Setting(displayName = "Crafted Item Durability Arc", description = "Should crafted items' durability be shown with an arc?", order = 2)
         public boolean craftedDurabilityBars = true;
+
+        @Setting(displayName = "Show Average Unidentified Level", description = "Should the average level of an unidentified item be shown instead of the entire range?", order = 3)
+        public boolean averageUnidentifiedLevel = true;
+
+        @Setting(displayName = "Roman Numeral Powder Tier", description = "Should the tier of powders be displayed using roman numerals?", order = 4)
+        public boolean romanNumeralPowderTier = true;
 
         @Setting(displayName = "Dungeon Key Specification", description = "Should a letter indicating the destination of dungeon keys be displayed?", order = 8)
         public boolean keySpecification = true;
